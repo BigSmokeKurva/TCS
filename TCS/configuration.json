@@ -1,0 +1,11 @@
+{
+	"Database": {
+		"Host": "localhost",
+		"Username": "postgres",
+		"Password": "iop3360A",
+		"DatabaseName": "testdb"
+	},
+	"RootAccount": {
+		"Password":  "iop3360A"
+	}
+}
