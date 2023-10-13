@@ -1,6 +1,7 @@
 ﻿const loginButton = document.getElementById('login-header');
 const registerButton = document.getElementById('register-header');
 const underline = document.getElementById('underline');
+const notificationContainer = document.getElementById('notification-container');
 
 function updateUnderline(element) {
     const buttonRect = element.getBoundingClientRect();
@@ -14,6 +15,33 @@ function updateUnderline(element) {
 function clickAuth() {
     if (!(validateLogin() | validatePassword()))
         return;
+    var login = $('#login').val();
+    var password = $('#password').val();
+
+    var requestData = {
+        login: login,
+        password: password
+    };
+
+    $.ajax({
+        type: "POST",
+        url: "/api/authorization",
+        data: JSON.stringify(requestData), // Преобразуем данные в JSON
+        contentType: "application/json", // Устанавливаем заголовок Content-Type
+        success: function (response) {
+            // Обработка успешного ответа от сервера
+            if (response.status == "error") {
+                showNotification(response.message);
+                return;
+            }
+            window.location.href = "/";
+        },
+        error: function (error) {
+            // Обработка ошибки
+            showNotification("Произошла ошибка при авторизации. Попробуйте позже.");
+        }
+    });
+
 }
 
 function clickReg() {
@@ -37,19 +65,65 @@ function clickReg() {
         contentType: "application/json", // Устанавливаем заголовок Content-Type
         success: function (response) {
             // Обработка успешного ответа от сервера
-            console.log("Регистрация выполнена успешно.", response);
+            if (response.status == "error") {
+                showNotification(response.message);
+                return;
+            }
+            window.location.href = "/";
         },
         error: function (error) {
             // Обработка ошибки
-            console.error("Произошла ошибка при регистрации.", error);
+            showNotification("Произошла ошибка при регистрации. Попробуйте позже.");
         }
     });
+}
+
+function showNotification(notificationText) {
+    const notification = document.createElement('div');
+    notification.className = 'notification';
+    const notificationContent = document.createElement('div');
+    notificationContent.className = 'notification-content';
+    const image = document.createElement('img');
+    image.src = '/Authorization/error.svg';
+    image.alt = 'Ошибка';
+    // Создаем элемент для текста
+    const text = document.createElement('div');
+    text.textContent = notificationText;
+    notificationContent.appendChild(image);
+    notificationContent.appendChild(text);
+
+    notification.appendChild(notificationContent);
+    const existingNotifications = notificationContainer.querySelectorAll('.notification');
+
+    existingNotifications.forEach(existingNotification => {
+        existingNotification.style.bottom = parseInt(existingNotification.style.bottom) + 50 + 'px';
+    });
+
+    notificationContainer.appendChild(notification);
+    notification.style.bottom = '0';
+
+    // Добавляем класс "show" для анимации появления
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 0);
+
+    // Задержка перед началом анимации исчезновения
+    setTimeout(() => {
+        notification.classList.add('hide');
+
+        // Удаление уведомления после окончания анимации
+        notification.addEventListener('transitionend', () => {
+            notification.remove();
+        });
+    }, 3000); // Изменено на 3000 миллисекунд для удобства демонстрации
+
 }
 
 function validateEmail() {
     var email = $('#email').val();
     var emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
-    var isValid = emailPattern.test(email);
+    var isValidLength = email.length <= 30;
+    var isValidPattern = emailPattern.test(email);
 
     // Конфигурация для управления элементами
     var config = {
@@ -57,7 +131,7 @@ function validateEmail() {
         emailInput: $('#email')
     };
 
-    if (isValid) {
+    if (isValidLength && isValidPattern) {
         // Валидный
         config.continueButton.prop('disabled', false);
         config.emailInput.removeClass('invalid-input');
@@ -72,7 +146,8 @@ function validateEmail() {
 function validateLogin() {
     var login = $('#login').val();
     var loginPattern = /^[a-zA-Z0-9_-]+$/;
-    var isValid = loginPattern.test(login);
+    var isValidLength = login.length >= 4 && login.length <= 12; // Минимальное и максимальное количество символов
+    var isValidPattern = loginPattern.test(login);
 
     // Конфигурация для управления элементами
     var config = {
@@ -80,7 +155,7 @@ function validateLogin() {
         loginInput: $('#login')
     };
 
-    if (isValid) {
+    if (isValidLength && isValidPattern) {
         // Валидный
         config.continueButton.prop('disabled', false);
         config.loginInput.removeClass('invalid-input');
@@ -94,9 +169,10 @@ function validateLogin() {
 
 function validatePassword() {
     var password = $('#password').val();
-    var minLength = 5; // Минимальная длина пароля (в данном случае 8 символов)
+    var minLength = 5; // Минимальная длина пароля
+    var maxLength = 30; // Максимальная длина пароля
     var passwordPattern = /^[a-zA-Z0-9!@#$%^&*()_-]+$/;
-    var isValid = password.length >= minLength && passwordPattern.test(password);
+    var isValid = password.length >= minLength && password.length <= maxLength && passwordPattern.test(password);
 
     // Конфигурация для управления элементами
     var config = {

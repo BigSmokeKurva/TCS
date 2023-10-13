@@ -1,4 +1,5 @@
 ﻿using Npgsql;
+using NpgsqlTypes;
 using System.Data;
 using TCS.Controllers;
 
@@ -10,7 +11,6 @@ namespace TCS
         private static Timer timer;
         private static async void AutoCleanerSessions(object state)
         {
-            Console.WriteLine("ujryutyuyrtu");
             using (var cmd = connection.CreateCommand())
             {
                 cmd.CommandText = "DELETE FROM sessions WHERE expires < NOW();";
@@ -48,7 +48,7 @@ namespace TCS
                     cmd.CommandText = "select datname from pg_catalog.pg_database;";
                     //await cmd.ExecuteNonQueryAsync();
                     using var reader = await cmd.ExecuteReaderAsync();
-                    while (reader.Read())
+                    while (await reader.ReadAsync())
                         databases.Add(reader.GetString(0));
                 }
                 if (!databases.Contains(Configuration.Database.DatabaseName))
@@ -86,7 +86,7 @@ namespace TCS
                 cmd.Parameters.AddWithValue("@Login", data.Login);
                 cmd.Parameters.AddWithValue("@Email", data.Email);
                 using var reader = await cmd.ExecuteReaderAsync();
-                reader.Read();
+                await reader.ReadAsync();
                 result = reader.GetString(0);
             }
             return result;
@@ -104,7 +104,7 @@ namespace TCS
                 cmd.Parameters.AddWithValue("@Email", data.Email);
 
                 using var reader = await cmd.ExecuteReaderAsync();
-                reader.Read();
+                await reader.ReadAsync();
                 id = reader.GetInt32(0);
             }
             return id;
@@ -118,7 +118,7 @@ namespace TCS
                 cmd.Parameters.AddWithValue("@Id", id);
 
                 using var reader = await cmd.ExecuteReaderAsync();
-                reader.Read();
+                await reader.ReadAsync();
                 auth_token = reader.GetGuid(0).ToString();
             }
             return auth_token;
@@ -131,10 +131,10 @@ namespace TCS
                 using (var cmd = connection.CreateCommand())
                 {
                     // TODO
-                    cmd.CommandText = $"SELECT EXISTS (SELECT 1 FROM sessions WHERE auth_token = '@auth_token') AS exists_token;";
-                    cmd.Parameters.AddWithValue("@auth_token", auth_token);
+                    cmd.CommandText = "SELECT EXISTS (SELECT 1 FROM sessions WHERE auth_token = @auth_token::uuid) AS exists_token;";
+                    cmd.Parameters.AddWithValue("@auth_token", NpgsqlDbType.Uuid, Guid.Parse(auth_token));
                     using var reader = await cmd.ExecuteReaderAsync();
-                    reader.Read();
+                    await reader.ReadAsync();
                     isValid = reader.GetBoolean(0);
                 }
             }
@@ -143,6 +143,24 @@ namespace TCS
                 isValid = false;
             }
             return isValid;
+        }
+        internal static async Task<int> CheckUser(AuthorizationModel data)
+        {
+            /// Возвращает -1, если пользователя нет
+            int userId = -1;
+            using (var cmd = connection.CreateCommand())
+            {
+                cmd.CommandText = "SELECT id FROM users WHERE username = @Login AND password = @Password LIMIT 1;";
+                cmd.Parameters.AddWithValue("@Login", data.Login);
+                cmd.Parameters.AddWithValue("@Password", data.Password);
+
+                using var reader = await cmd.ExecuteReaderAsync();
+                if (await reader.ReadAsync())
+                {
+                    userId = reader.GetInt32(0);
+                }
+            }
+            return userId;
         }
     }
 }

@@ -7,15 +7,20 @@ namespace TCS.Pages
     {
 
         //public bool IsAuthorized;
-        public ActionResult OnGet()
+        public async Task OnGet()
         {
             var auth_token = Request.Cookies.ContainsKey("auth_token") ? Request.Cookies["auth_token"] : null;
-            if(auth_token is not null)
+            if (auth_token is not null && await Database.IsValidAuthToken(auth_token))
             {
-                // Проверка токена авторизации
-                return Redirect("/Index");
+                // TODO переадресация на основную страницу
+                // Пользователь авторизован
+                Response.Redirect("/Error");
+                return;
             }
-            return Redirect("/Authorization");
+            Response.Redirect("/Authorization");
+            return;
+
+
         }
     }
 }
