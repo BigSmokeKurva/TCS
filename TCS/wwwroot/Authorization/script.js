@@ -13,7 +13,7 @@ function updateUnderline(element) {
 }
 
 function clickAuth() {
-    if (!(validateLogin() | validatePassword()))
+    if (!(validateLogin() & validatePassword()))
         return;
     var login = $('#login').val();
     var password = $('#password').val();
@@ -45,7 +45,7 @@ function clickAuth() {
 }
 
 function clickReg() {
-    if (!(validateEmail() | validateLogin() | validatePassword()))
+    if (!(validateEmail() & validateLogin() & validatePassword()))
         return;
 
     var email = $('#email').val();
@@ -146,7 +146,7 @@ function validateEmail() {
 function validateLogin() {
     var login = $('#login').val();
     var loginPattern = /^[a-zA-Z0-9_-]+$/;
-    var isValidLength = login.length >= 4 && login.length <= 12; // Минимальное и максимальное количество символов
+    var isValidLength = login.length >= 4 && login.length <= 16; // Минимальное и максимальное количество символов
     var isValidPattern = loginPattern.test(login);
 
     // Конфигурация для управления элементами
@@ -198,7 +198,11 @@ loginButton.addEventListener('click', () => {
     registerButton.classList.remove("button-active");
     var form =
         $('<input>', { id: 'login', placeholder: 'логин' }).on('blur', validateLogin).add(
-            $('<input>', { id: 'password', placeholder: 'пароль', type: 'password' }).on('blur', validatePassword)).add(
+            $('<input>', { id: 'password', placeholder: 'пароль', type: 'password' }).on('blur', validatePassword).on('keypress', function (event) {
+                if (event.which === 13 && validateLogin() & validatePassword()) {
+                    clickAuth();
+                }
+            })).add(
                 $('<button>', { class: 'continue-button', text: 'ВОЙТИ' }).click(
                     clickAuth
                 )
@@ -214,7 +218,11 @@ registerButton.addEventListener('click', () => {
     var form =
         $('<input>', { id: 'email', placeholder: 'почта' }).on('blur', validateEmail).add(
             $('<input>', { id: 'login', placeholder: 'логин' }).on('blur', validateLogin)).add(
-                $('<input>', { id: 'password', placeholder: 'пароль', type: 'password' }).on('blur', validatePassword)).add(
+                $('<input>', { id: 'password', placeholder: 'пароль', type: 'password' }).on('blur', validatePassword).on('keypress', function (event) {
+                    if (event.which === 13 && validateLogin() & validatePassword() & validateEmail()) {
+                        clickAuth();
+                    }
+                })).add(
                     $('<button>', { class: 'continue-button', text: 'РЕГИСТРАЦИЯ' }).click(
                         clickReg
                     )

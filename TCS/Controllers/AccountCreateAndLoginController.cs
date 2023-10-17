@@ -34,7 +34,7 @@ namespace TCS.Controllers
         private static bool ValidateLogin(string login)
         {
             int minLength = 4; // Минимальная длина
-            int maxLength = 12; // Максимальная длина
+            int maxLength = 16; // Максимальная длина
 
             bool hasValidLength = login.Length >= minLength && login.Length <= maxLength;
             bool matchesPattern = loginRegex.IsMatch(login);
@@ -57,7 +57,7 @@ namespace TCS.Controllers
         public async Task<ActionResult> Registration([FromBody] RegistrationModel model)
         {
             string error;
-            if(!(ValidateEmail(model.Email) && ValidateLogin(model.Login) && ValidatePassword(model.Password)))
+            if (!(ValidateEmail(model.Email) && ValidateLogin(model.Login) && ValidatePassword(model.Password)))
             {
                 // Данные не прошли валидацию
                 var data = new
@@ -83,13 +83,14 @@ namespace TCS.Controllers
 
             var cookieOptions = new CookieOptions
             {
-                HttpOnly = true, // Чтобы предотвратить доступ к cookie средствами JavaScript
+                HttpOnly = false, // Чтобы предотвратить доступ к cookie средствами JavaScript
                 Secure = true,   // Если ваше приложение работает по HTTPS
-                SameSite = SameSiteMode.Lax, // Установите в соответствии с вашими требованиями безопасности
+                SameSite = SameSiteMode.None, // Установите в соответствии с вашими требованиями безопасности
                 Expires = DateTime.UtcNow.AddMonths(1) // Время жизни cookie (например, 1 месяц)
             };
             Response.Cookies.Append("auth_token", auth_token, cookieOptions);
             // редирект на главную страницу
+            await Database.Log(id, "Зарегистрировался.");
             return Ok(new
             {
                 status = "ok"
@@ -113,7 +114,7 @@ namespace TCS.Controllers
             }
             // проверка на существование пользователя
             var id = await Database.CheckUser(model);
-            if(id == -1)
+            if (id == -1)
             {
                 var data = new
                 {
@@ -126,12 +127,13 @@ namespace TCS.Controllers
             var auth_token = await Database.CreateSession(id);
             var cookieOptions = new CookieOptions
             {
-                HttpOnly = true, // Чтобы предотвратить доступ к cookie средствами JavaScript
+                HttpOnly = false, // Чтобы предотвратить доступ к cookie средствами JavaScript
                 Secure = true,   // Если ваше приложение работает по HTTPS
-                SameSite = SameSiteMode.Lax, // Установите в соответствии с вашими требованиями безопасности
-                Expires = DateTime.UtcNow.AddMonths(1) // Время жизни cookie (например, 1 месяц)
+                SameSite = SameSiteMode.None, // Установите в соответствии с вашими требованиями безопасности
+                Expires = DateTime.UtcNow.AddMonths(1)
             };
             Response.Cookies.Append("auth_token", auth_token, cookieOptions);
+            await Database.Log(id, "Авторизовался.");
             // редирект на главную страницу
             return Ok(new
             {
@@ -139,5 +141,22 @@ namespace TCS.Controllers
             });
         }
 
+        [HttpGet]
+        [Route("unauthorization")]
+        public async Task<ActionResult> Unauthorization()
+        {
+            // Получаем токен сессии из cookie
+            var auth_token = Request.Cookies["auth_token"];
+            // удалением его из базы
+            if (auth_token is not null)
+                await Database.DeleteAuthToken(auth_token);
+            // Удаляем все cookie на сайте
+            foreach (var cookie in Request.Cookies.Keys)
+            {
+                Response.Cookies.Delete(cookie);
+            }
+            // Выполняем редирект на страницу "/"
+            return Ok(new { status = "ok" });
+        }
     }
 }

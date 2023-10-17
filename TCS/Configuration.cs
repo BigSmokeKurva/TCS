@@ -23,6 +23,7 @@ namespace TCS
 
         public static ConfigurationJson.DatabaseJson Database { get; set; }
         public static ConfigurationJson.RootAccountJson RootAccount { get; set; }
+        public static string PageTitle = "TCS";
         internal static void Init()
         {
             var config = JsonSerializer.Deserialize<ConfigurationJson>(File.ReadAllText("configuration.json"));

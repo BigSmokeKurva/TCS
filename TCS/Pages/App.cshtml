@@ -1,0 +1,58 @@
+﻿@page
+@model TCS.Pages.AppModel
+@using TCS;
+@{
+    var auth_token = Request.Cookies["auth_token"];
+    var id = await Database.GetId(auth_token);
+    var username = await Database.GetUsername(id);
+    var count_tokens = await Database.GetCountTokens(id);
+    var streamerUsername = await Database.GetStreamerUsername(id);
+}
+
+<html>
+<head>
+    <title>@Configuration.PageTitle</title>
+    <link rel="stylesheet" href="~/App/style.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+    <div id="main_grid">
+        <span id="title">ChatWizzard</span>
+        <div class="user-panel">
+            <div id="username">
+                <span>@username</span>
+            </div>
+            <button id="exit-button">ВЫЙТИ</button>
+        </div>
+        <div class="streamer-username-container">
+            <input type="text" placeholder="ник стримера" value="@streamerUsername" />
+            <button>
+                <img src="~/App/edit_icon.svg" alt="Редактировать" />
+            </button>
+            <button>
+                <img src="~/App/save_icon.svg" alt="Сохранить" />
+            </button>
+        </div>
+        <div class="status">
+            Канал: <span>@(string.IsNullOrEmpty(streamerUsername) ? "не указан" : streamerUsername)</span>Статус: <span>ошибка</span>
+            <br />
+            Всего ботов доступно: <span>@count_tokens</span>
+        </div>
+        <div class="menu">
+            <div class="button-container">
+                <button class="button" id="spam-btn">Спам</button>
+                <button class="button" id="binds-btn">Бинды</button>
+                <button class="button" id="manual-btn">Ручная отправка</button>
+                <div id="background_underline" class="underline">
+                    <div></div>
+                </div>
+                <div class="underline" id="underline"></div>
+            </div>
+        </div>
+    </div>
+    <div id="content"></div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="~/App/script.js"></script>
+
+</body>
+</html>

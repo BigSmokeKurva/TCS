@@ -1,6 +1,5 @@
 ﻿using Npgsql;
 using NpgsqlTypes;
-using System.Data;
 using TCS.Controllers;
 
 namespace TCS
@@ -24,12 +23,12 @@ namespace TCS
                 // users
                 "create table if not exists users (" +
                 "id serial primary key," +
-                "username text," +
-                "password text," +
-                "email text," +
+                "username varchar(50)," +
+                "password varchar(50)," +
+                "email varchar(50)," +
+                "admin bool default false," +
                 "unique(email, username)" +
                 ");",
-                $"insert into users (username, password, email) values ('root', '{Configuration.RootAccount.Password}', 'root@root.com') on conflict(username, email) do update set password = '{Configuration.RootAccount.Password}';",
                 // sessions
                 "create table if not exists sessions (" +
                 "auth_token uuid primary key default gen_random_uuid()," +
@@ -37,6 +36,22 @@ namespace TCS
                 "expires timestamp," +
                 "unique(auth_token)" +
                 ");",
+                // logs
+                "create table if not exists logs (" +
+                "id serial," +
+                "message text," +
+                "time timestamp" +
+                ");",
+                // config
+                "create table if not exists configuration (" +
+                "id serial primary key," +
+                "tokens jsonb default '{}'," +
+                "streamerUsername varchar(50) default ''" +
+                ");",
+                // root
+                $"insert into users (username, password, email, admin) values ('root', '{Configuration.RootAccount.Password}', 'root@root.com', true) on conflict(username, email) do update set password = '{Configuration.RootAccount.Password}';",
+                $"insert into configuration (id) values (1) on conflict do nothing;"
+
             };
             using (var connection = new NpgsqlConnection($"Host={Configuration.Database.Host};Username={Configuration.Database.Username};Password={Configuration.Database.Password};Database=postgres"))
             {
@@ -97,7 +112,19 @@ namespace TCS
             int id;
             using (var cmd = connection.CreateCommand())
             {
-                cmd.CommandText = "INSERT INTO users (username, password, email) VALUES (@Username, @Password, @Email) RETURNING id;";
+                //cmd.CommandText = "INSERT INTO users (username, password, email) VALUES (@Username, @Password, @Email) RETURNING id;";
+                cmd.CommandText =
+                    """
+                    WITH inserted_user AS (
+                        INSERT INTO users (username, password, email)
+                        VALUES (@Username, @Password, @Email)
+                        RETURNING id
+                    )
+                    INSERT INTO configuration (id)
+                    SELECT id
+                    FROM inserted_user
+                    returning id;
+                    """;
 
                 cmd.Parameters.AddWithValue("@Username", data.Login);
                 cmd.Parameters.AddWithValue("@Password", data.Password);
@@ -162,5 +189,85 @@ namespace TCS
             }
             return userId;
         }
+        internal static async Task Log(int id, string message)
+        {
+            using (var cmd = connection.CreateCommand())
+            {
+                cmd.CommandText = "INSERT INTO logs (id, message, time) VALUES (@id, @Message, NOW());";
+                cmd.Parameters.AddWithValue("@id", id);
+                cmd.Parameters.AddWithValue("@Message", message);
+                await cmd.ExecuteNonQueryAsync();
+            }
+        }
+        internal static async Task<int> GetId(string auth_token)
+        {
+            int id;
+            using (var cmd = connection.CreateCommand())
+            {
+                cmd.CommandText = "SELECT id FROM sessions WHERE auth_token = @auth_token::uuid limit 1;";
+                cmd.Parameters.AddWithValue("@auth_token", NpgsqlDbType.Uuid, Guid.Parse(auth_token));
+                using var reader = await cmd.ExecuteReaderAsync();
+                await reader.ReadAsync();
+                id = reader.GetInt32(0);
+            }
+            return id;
+        }
+        internal static async Task<string> GetUsername(int id)
+        {
+            string username;
+            using (var cmd = connection.CreateCommand())
+            {
+                cmd.CommandText = "SELECT username FROM users WHERE id = @id limit 1;";
+                cmd.Parameters.AddWithValue("@id", id);
+                using var reader = await cmd.ExecuteReaderAsync();
+                await reader.ReadAsync();
+                username = reader.GetString(0);
+            }
+            return username;
+        }
+        internal static async Task<int> GetCountTokens(int id)
+        {
+            int count;
+            using (var cmd = connection.CreateCommand())
+            {
+                cmd.CommandText =
+                    """
+                    SELECT count(*) AS dictionary_length
+                    FROM (
+                      SELECT jsonb_object_keys(tokens) AS key
+                      FROM configuration
+                      WHERE id = @id
+                    ) AS subquery limit 1;
+                    """;
+                cmd.Parameters.AddWithValue("@id", id);
+                using var reader = await cmd.ExecuteReaderAsync();
+                await reader.ReadAsync();
+                count = reader.GetInt32(0);
+            }
+            return count;
+        }
+        internal static async Task<string> GetStreamerUsername(int id)
+        {
+            string username;
+            using (var cmd = connection.CreateCommand())
+            {
+                cmd.CommandText = "SELECT streamerUsername FROM configuration WHERE id = @id limit 1;";
+                cmd.Parameters.AddWithValue("@id", id);
+                using var reader = await cmd.ExecuteReaderAsync();
+                await reader.ReadAsync();
+                username = reader.GetString(0);
+            }
+            return username;
+        }
+        internal static async Task DeleteAuthToken(string auth_token)
+        {
+            using (var cmd = connection.CreateCommand())
+            {
+                cmd.CommandText = "DELETE FROM sessions WHERE auth_token = @auth_token::uuid;";
+                cmd.Parameters.AddWithValue("@auth_token", NpgsqlDbType.Uuid, Guid.Parse(auth_token));
+                await cmd.ExecuteNonQueryAsync();
+            }
+        }
+
     }
 }

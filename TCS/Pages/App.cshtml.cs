@@ -5,13 +5,10 @@ using TCS.Filters;
 namespace TCS.Pages
 {
     [TypeFilter(typeof(AuthTokenPageFilter))]
-    public class IndexModel : PageModel
+    public class AppModel : PageModel
     {
-
-        //public bool IsAuthorized;
-        public async Task OnGet()
+        public void OnGet()
         {
-            Response.Redirect("/App");
         }
     }
 }

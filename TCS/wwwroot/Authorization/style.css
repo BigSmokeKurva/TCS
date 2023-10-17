@@ -12,9 +12,14 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh; /* Заполнить всю высоту видимой области окна браузера */
+    height: 100%; /* Заполнить всю высоту видимой области окна браузера */
     margin: 0;
+    /*-webkit-tap-highlight-color: transparent;*/ /* Для Safari */
+    /*-webkit-user-select: none;*/ /* Запрет выделения текста в Safari */
+    /*-moz-tap-highlight-color: transparent;*/ /* Для Firefox */
+    /*user-select: none;*/ /* Запрет выделения текста в большинстве браузеров */
 }
+
 #form {
     width: 280px;
     text-align: center;
@@ -135,6 +140,9 @@ input {
     align-items: center;
     /*padding: 10px;*/
     padding: 0 10px;
+    /*width: auto;*/
+    /*min-width: 250px;*/
+    white-space:nowrap;
 }
 
 .notification img {
