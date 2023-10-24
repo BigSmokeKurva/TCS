@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Text.RegularExpressions;
 
 namespace TCS.Controllers
 {
@@ -14,42 +13,15 @@ namespace TCS.Controllers
         public string Login { get; set; }
         public string Password { get; set; }
     }
+
     [ApiController]
     [Route("api")]
     public class AccountCreateAndLoginController : ControllerBase
     {
         private readonly ILogger<AccountCreateAndLoginController> _logger;
-        private static readonly Regex emailRegex = new(@"^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$", RegexOptions.Compiled);
-        private static readonly Regex loginRegex = new("^[a-zA-Z0-9_-]+$", RegexOptions.Compiled);
-        private static readonly Regex passwordRegex = new("^[a-zA-Z0-9!@#$%^&*()_-]+$", RegexOptions.Compiled);
         public AccountCreateAndLoginController(ILogger<AccountCreateAndLoginController> logger)
         {
             _logger = logger;
-        }
-        private static bool ValidateEmail(string email)
-        {
-            // Проверяем, что email соответствует регулярному выражению и его длина не превышает 30 символов
-            return emailRegex.IsMatch(email) && email.Length <= 30;
-        }
-        private static bool ValidateLogin(string login)
-        {
-            int minLength = 4; // Минимальная длина
-            int maxLength = 16; // Максимальная длина
-
-            bool hasValidLength = login.Length >= minLength && login.Length <= maxLength;
-            bool matchesPattern = loginRegex.IsMatch(login);
-
-            return hasValidLength && matchesPattern;
-        }
-        private static bool ValidatePassword(string password)
-        {
-            int minLength = 5; // Минимальная длина пароля
-            int maxLength = 30; // Максимальная длина пароля
-
-            bool hasValidLength = password.Length >= minLength && password.Length <= maxLength;
-            bool matchesPattern = passwordRegex.IsMatch(password);
-
-            return hasValidLength && matchesPattern;
         }
 
         [HttpPost]
@@ -57,7 +29,7 @@ namespace TCS.Controllers
         public async Task<ActionResult> Registration([FromBody] RegistrationModel model)
         {
             string error;
-            if (!(ValidateEmail(model.Email) && ValidateLogin(model.Login) && ValidatePassword(model.Password)))
+            if (!(UserValidators.ValidateEmail(model.Email) && UserValidators.ValidateLogin(model.Login) && UserValidators.ValidatePassword(model.Password)))
             {
                 // Данные не прошли валидацию
                 var data = new
@@ -102,7 +74,7 @@ namespace TCS.Controllers
         public async Task<ActionResult> Authorization([FromBody] AuthorizationModel model)
         {
             string error;
-            if (!(ValidateLogin(model.Login) && ValidatePassword(model.Password)))
+            if (!(UserValidators.ValidateLogin(model.Login) && UserValidators.ValidatePassword(model.Password)))
             {
                 // Данные не прошли валидацию
                 var data = new
@@ -147,6 +119,8 @@ namespace TCS.Controllers
         {
             // Получаем токен сессии из cookie
             var auth_token = Request.Cookies["auth_token"];
+            if (!await Database.IsValidAuthToken(auth_token))
+                return Ok(new { status = "ok" });
             // удалением его из базы
             if (auth_token is not null)
                 await Database.DeleteAuthToken(auth_token);

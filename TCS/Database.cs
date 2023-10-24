@@ -1,12 +1,31 @@
 ﻿using Npgsql;
 using NpgsqlTypes;
+using System.Data;
+using System.Net;
+using System.Text;
 using TCS.Controllers;
+using static TCS.ProxyCheck;
 
 namespace TCS
 {
+    public struct User
+    {
+        public int Id { get; set; }
+        public string Username { get; set; }
+        public bool Admin { get; set; }
+        public string Password { get; set; }
+        public string Email { get; set; }
+    }
+    public struct UserConfig
+    {
+        public int Id { get; set; }
+        public Dictionary<string, string> Tokens { get; set; }
+        public WebProxy[] Proxies { get; set; }
+        public string StreamerUsername { get; set; }
+    }
     public class Database
     {
-        private static NpgsqlConnection connection;
+        internal static NpgsqlConnection connection;
         private static Timer timer;
         private static async void AutoCleanerSessions(object state)
         {
@@ -46,11 +65,58 @@ namespace TCS
                 "create table if not exists configuration (" +
                 "id serial primary key," +
                 "tokens jsonb default '{}'," +
+                "proxies jsonb default '[]'," +
                 "streamerUsername varchar(50) default ''" +
                 ");",
                 // root
                 $"insert into users (username, password, email, admin) values ('root', '{Configuration.RootAccount.Password}', 'root@root.com', true) on conflict(username, email) do update set password = '{Configuration.RootAccount.Password}';",
-                $"insert into configuration (id) values (1) on conflict do nothing;"
+                $"insert into configuration (id) values (1) on conflict do nothing;",
+                // функции
+                """
+                CREATE OR REPLACE FUNCTION change_username(p_id integer, new_username text) RETURNS text AS $$
+                DECLARE
+                    existing_username_count integer;
+                BEGIN
+                    SELECT COUNT(*) INTO existing_username_count FROM users WHERE username = new_username AND id <> p_id;
+
+                    IF existing_username_count > 0 THEN
+                        RETURN 'Данный логин уже используется.';
+                    ELSE
+                        UPDATE users
+                        SET username = new_username
+                        WHERE id = p_id;
+                        RETURN 'OK';
+                    END IF;
+                END $$ LANGUAGE plpgsql;
+                """,
+                """
+                CREATE OR REPLACE FUNCTION change_email(p_id integer, new_email text) RETURNS text AS $$
+                DECLARE
+                    existing_email_count integer;
+                BEGIN
+                    SELECT COUNT(*) INTO existing_email_count FROM users WHERE email = new_email AND id <> p_id;
+
+                    IF existing_email_count > 0 THEN
+                        RETURN 'Данная почта уже используется.';
+                    ELSE
+                        UPDATE users
+                        SET email = new_email
+                        WHERE id = p_id;
+                        RETURN 'OK';
+                    END IF;
+                END $$ LANGUAGE plpgsql;
+                """,
+                """
+                CREATE OR REPLACE FUNCTION delete_user(target_id integer)
+                RETURNS void AS $$
+                BEGIN
+                    DELETE FROM logs WHERE id = target_id;
+                    DELETE FROM users WHERE id = target_id;
+                    DELETE FROM configuration WHERE id = target_id;
+                END;
+                $$ LANGUAGE plpgsql;
+                
+                """
 
             };
             using (var connection = new NpgsqlConnection($"Host={Configuration.Database.Host};Username={Configuration.Database.Username};Password={Configuration.Database.Password};Database=postgres"))
@@ -268,6 +334,231 @@ namespace TCS
                 await cmd.ExecuteNonQueryAsync();
             }
         }
-
+        internal static async Task<bool> IsAdmin(int id)
+        {
+            bool isAdmin;
+            using (var cmd = connection.CreateCommand())
+            {
+                cmd.CommandText = "SELECT admin FROM users WHERE id = @id limit 1;";
+                cmd.Parameters.AddWithValue("@id", id);
+                using var reader = await cmd.ExecuteReaderAsync();
+                await reader.ReadAsync();
+                isAdmin = reader.GetBoolean(0);
+            }
+            return isAdmin;
+        }
+        internal class AdminArea
+        {
+            internal struct UserShort
+            {
+                public int Id { get; set; }
+                public string Username { get; set; }
+                public string Email { get; set; }
+            }
+            internal struct UserInfo
+            {
+                public string StreamerUsername { get; set; }
+                public int TokensCount { get; set; }
+                public int ProxiesCount { get; set; }
+                public bool Admin { get; set; }
+                public string Password { get; set; }
+                public string[] LogsTime { get; set; }
+            }
+            internal struct Log
+            {
+                public string Message { get; set; }
+                public DateTime Time { get; set; }
+            }
+            internal static async Task<List<UserShort>> GetUsers()
+            {
+                List<UserShort> users = new();
+                using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT id, username, email FROM users WHERE username != 'root';";
+                    using var reader = await cmd.ExecuteReaderAsync();
+                    while (reader.Read())
+                    {
+                        users.Add(new UserShort
+                        {
+                            Id = reader.GetInt32(0),
+                            Username = reader.GetString(1),
+                            Email = reader.GetString(2)
+                        });
+                    }
+                }
+                return users;
+            }
+            internal static async Task<UserInfo> GetUserInfo(int id)
+            {
+                UserInfo userInfo;
+                using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText =
+                        """
+                        SELECT
+                            u.admin AS Admin,
+                            u.password AS Password,
+                            c.streamerUsername,
+                            (SELECT COUNT(*) FROM jsonb_object_keys(c.tokens)) AS TokensCount,
+                            jsonb_array_length(c.proxies) AS ProxiesCount,
+                            (
+                                SELECT ARRAY_AGG(DISTINCT TO_CHAR(l.time, 'DD.MM.YYYY')) 
+                                FROM logs l 
+                                WHERE l.id = u.id
+                            ) AS LogsTime
+                        FROM users u
+                        LEFT JOIN configuration c ON u.id = c.id
+                        WHERE u.id = @id
+                        LIMIT 1;
+                        """;
+                    cmd.Parameters.AddWithValue("@id", id);
+                    using var reader = await cmd.ExecuteReaderAsync();
+                    await reader.ReadAsync();
+                    userInfo = new UserInfo
+                    {
+                        Admin = reader.GetBoolean("Admin"),
+                        Password = reader.GetString("Password"),
+                        StreamerUsername = reader.GetString("streamerUsername"),
+                        TokensCount = reader.GetInt32("TokensCount"),
+                        ProxiesCount = reader.GetInt32("ProxiesCount"),
+                        LogsTime = reader.GetFieldValue<string[]>("LogsTime").Reverse().ToArray()
+                    };
+                }
+                return userInfo;
+            }
+            internal static async Task<List<Log>> GetLogs(int id, string time)
+            {
+                List<Log> logs = new();
+                using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT message, time FROM logs WHERE id = @id AND time::date = @time::date;";
+                    cmd.Parameters.AddWithValue("@id", id);
+                    cmd.Parameters.AddWithValue("@time", time);
+                    using var reader = await cmd.ExecuteReaderAsync();
+                    while (await reader.ReadAsync())
+                    {
+                        logs.Add(new Log
+                        {
+                            Message = reader.GetString(0),
+                            Time = reader.GetDateTime(1)
+                        });
+                    }
+                }
+                logs.Reverse();
+                return logs;
+            }
+            internal static async Task<string> ChangeUsername(int id, string username)
+            {
+                string result;
+                using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT change_username(@p_id, @new_username);";
+                    cmd.Parameters.AddWithValue("@p_id", id);
+                    cmd.Parameters.AddWithValue("@new_username", username);
+                    result = (string)await cmd.ExecuteScalarAsync();
+                }
+                return result;
+            }
+            internal static async Task ChangePassword(int id, string password)
+            {
+                using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "UPDATE users SET password = @password WHERE id = @id;";
+                    cmd.Parameters.AddWithValue("@id", id);
+                    cmd.Parameters.AddWithValue("@password", password);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+            internal static async Task<string> ChangeEmail(int id, string email)
+            {
+                string result;
+                using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT change_email(@p_id, @new_email);";
+                    cmd.Parameters.AddWithValue("@p_id", id);
+                    cmd.Parameters.AddWithValue("@new_email", email);
+                    result = (string)await cmd.ExecuteScalarAsync();
+                }
+                return result;
+            }
+            internal static async Task ChangeAdmin(int id, bool admin)
+            {
+                using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "UPDATE users SET admin = @admin WHERE id = @id;";
+                    cmd.Parameters.AddWithValue("@id", id);
+                    cmd.Parameters.AddWithValue("@admin", admin);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+            internal static async Task ChangeTokens(int id, Dictionary<string, string> tokens)
+            {
+                using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "UPDATE configuration SET tokens = @tokens WHERE id = @id;";
+                    cmd.Parameters.AddWithValue("@tokens", NpgsqlDbType.Jsonb, tokens);
+                    cmd.Parameters.AddWithValue("@id", id);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+            internal static async Task ChangeProxies(int id, IEnumerable<Proxy> proxies)
+            {
+                using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "UPDATE configuration SET proxies = @proxies WHERE id = @id;";
+                    cmd.Parameters.AddWithValue("@proxies", NpgsqlDbType.Jsonb, proxies);
+                    cmd.Parameters.AddWithValue("@id", id);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+            internal static async Task<Dictionary<string, string>> GetTokens(int id)
+            {
+                Dictionary<string, string> tokens;
+                using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT tokens FROM configuration WHERE id = @id LIMIT 1;";
+                    cmd.Parameters.AddWithValue("@id", id);
+                    using var reader = await cmd.ExecuteReaderAsync();
+                    await reader.ReadAsync();
+                    tokens = reader.GetFieldValue<Dictionary<string, string>>("tokens");
+                }
+                return tokens;
+            }
+            internal static async Task<Proxy[]> GetProxies(int id)
+            {
+                Proxy[] proxies;
+                using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT proxies FROM configuration WHERE id = @id LIMIT 1;";
+                    cmd.Parameters.AddWithValue("@id", id);
+                    using var reader = await cmd.ExecuteReaderAsync();
+                    await reader.ReadAsync();
+                    proxies = reader.GetFieldValue<Proxy[]>("proxies");
+                }
+                return proxies;
+            }
+            internal static async Task DeleteUser(int id)
+            {
+                using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT delete_user(@id);";
+                    cmd.Parameters.AddWithValue("@id", id);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+        }
+        internal class AppArea
+        {
+            internal static async Task UpdateStreamerUsername(int id, string username)
+            {
+                using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "UPDATE configuration SET streamerUsername = @username WHERE id = @id;";
+                    cmd.Parameters.AddWithValue("@username", username);
+                    cmd.Parameters.AddWithValue("@id", id);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+        }
     }
 }

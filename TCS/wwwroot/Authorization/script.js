@@ -220,7 +220,7 @@ registerButton.addEventListener('click', () => {
             $('<input>', { id: 'login', placeholder: 'логин' }).on('blur', validateLogin)).add(
                 $('<input>', { id: 'password', placeholder: 'пароль', type: 'password' }).on('blur', validatePassword).on('keypress', function (event) {
                     if (event.which === 13 && validateLogin() & validatePassword() & validateEmail()) {
-                        clickAuth();
+                        clickReg();
                     }
                 })).add(
                     $('<button>', { class: 'continue-button', text: 'РЕГИСТРАЦИЯ' }).click(

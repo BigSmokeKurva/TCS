@@ -1,0 +1,122 @@
+﻿@page
+@model TCS.Pages.AdminPanelModel
+@using TCS;
+@{
+    var auth_token = Request.Cookies["auth_token"];
+    var id = await Database.GetId(auth_token);
+    var username = await Database.GetUsername(id);
+}
+<html>
+<head>
+    <title>@Configuration.PageTitle</title>
+    <link rel="stylesheet" href="~/AdminPanel/style.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+    <div id="main_grid">
+        <span id="title">ChatWizzard</span>
+        <div class="user-panel">
+            <a class="admin-button" href="/App">Панель воркера</a>
+            <div id="username">
+                <span>@username</span>
+            </div>
+            <button id="exit-button">ВЫЙТИ</button>
+        </div>
+        <div class="button-container">
+            <button class="button" disabled>Воркеры</button>
+            <div class="background_underline underline">
+            </div>
+            <div class="underline"></div>
+        </div>
+        <div class="grid-container">
+            <div id="list-container">
+                <div class="search">
+                    <input type="text" placeholder="Поиск...">
+                </div>
+                <div class="list" id="users"></div>
+            </div>
+            <div id="info-grid" style="display: none">
+                <div id="info-panel">
+                    <div class="info-row">
+                        Почта: <span contenteditable="false" class="editable" id="email"></span>
+                        <button>
+                            <img src="~/App/edit.svg" alt="Редактировать" />
+                        </button>
+                    </div>
+                    <div class="info-row">
+                        Логин: <span contenteditable="false" class="editable" id="user-username"></span>
+                        <button>
+                            <img src="~/App/edit.svg" alt="Редактировать" />
+                        </button>
+                    </div>
+                    <div class="info-row">
+                        Пароль: <span contenteditable="false" class="editable" id="password"></span>
+                        <button>
+                            <img src="~/App/edit.svg" alt="Редактировать" />
+                        </button>
+                    </div>
+                    <div class="info-row">
+                        Ник стримера: <span id="streamer-username" ></span>
+                    </div>
+                    <div class="info-row">
+                        Токены: <span id="tokens-count"></span>
+                        <button id="upload-tokens">
+                            <img src="~/AdminPanel/upload.svg" alt="Upload" />
+                        </button>
+                        <button id="download-tokens">
+                            <img src="~/AdminPanel/download.svg" alt="Download" />
+                        </button>
+                    </div>
+                    <div class="info-row">
+                        Прокси: <span id="proxies-count" ></span>
+                        <button id="upload-proxies">
+                            <img src="~/AdminPanel/upload.svg" alt="Upload" />
+                        </button>
+                        <button id="download-proxies">
+                            <img src="~/AdminPanel/download.svg" alt="Download" />
+                        </button>
+                    </div>
+                    <div class="right-div-column info-row">
+                        <div>
+                            Админка
+                            <input type="checkbox" id="checkbox">
+                            <label for="checkbox"></label>
+                        </div>
+                    </div>
+                    <div class="right-div-column">
+                        <button class="delete-account-button">Удалить</button>
+                    </div>
+                </div>
+                <div class="button-container logs_title">
+                    <button class="button" disabled>Логи</button>
+                    <div class="background_underline underline"></div>
+                    <div class="underline"></div>
+                </div>
+                <div class="custom-select" id="logs-select">
+                    <div class="selected-option">
+                        <span>
+                            Выбрать
+                        </span>
+                        <div>
+                            <img class="triangle-close" src="~/AdminPanel/triangle.svg" alt="" />
+                        </div>
+                    </div>
+                    <ul class="options" id="logs-time-list"></ul>
+                </div>
+                <div id="logs">
+                    <div id="logs-title">
+                        <span>Время</span>
+                        <span>Действие</span>
+                    </div>
+                    <div class="logs_underline"></div>
+                    <div class="list list-logs"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <input type="file" id="fileInput" accept=".txt" style="display: none;">
+    <div class="notification-container" id="notification-container"></div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="~/AdminPanel/script.js"></script>
+</body>
+</html>

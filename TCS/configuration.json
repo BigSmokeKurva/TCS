@@ -6,6 +6,9 @@
 		"DatabaseName": "testdb"
 	},
 	"RootAccount": {
-		"Password":  "iop3360A"
+		"Password": "iop3360A"
+	},
+	"TokenCheck": {
+		"Threads":  50
 	}
 }

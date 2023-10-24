@@ -7,6 +7,7 @@
     var username = await Database.GetUsername(id);
     var count_tokens = await Database.GetCountTokens(id);
     var streamerUsername = await Database.GetStreamerUsername(id);
+    var isAdmin = await Database.IsAdmin(id);
 }
 
 <html>
@@ -19,18 +20,19 @@
     <div id="main_grid">
         <span id="title">ChatWizzard</span>
         <div class="user-panel">
+            @if (isAdmin)
+            {
+                <a class="admin-button" href="/AdminPanel">Панель администратора</a>
+            }
             <div id="username">
                 <span>@username</span>
             </div>
             <button id="exit-button">ВЫЙТИ</button>
         </div>
         <div class="streamer-username-container">
-            <input type="text" placeholder="ник стримера" value="@streamerUsername" />
+            <input type="text" placeholder="ник стримера" value="@streamerUsername" disabled/>
             <button>
-                <img src="~/App/edit_icon.svg" alt="Редактировать" />
-            </button>
-            <button>
-                <img src="~/App/save_icon.svg" alt="Сохранить" />
+                <img src="~/App/edit.svg" alt="Редактировать" />
             </button>
         </div>
         <div class="status">
@@ -51,6 +53,7 @@
         </div>
     </div>
     <div id="content"></div>
+    <div class="notification-container" id="notification-container"></div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="~/App/script.js"></script>
 

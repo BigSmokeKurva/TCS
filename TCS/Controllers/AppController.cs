@@ -3,13 +3,11 @@ using TCS.Filters;
 
 namespace TCS.Controllers
 {
+    [Route("App")]
     [TypeFilter(typeof(AuthTokenPageFilter))]
     public class AppController : Controller
     {
-        public IActionResult Index()
-        {
-            return View();
-        }
+        [HttpGet("LoadPartialView")]
         public async Task<IActionResult> LoadPartialView(string partialViewName)
         {
             var auth_token = Request.Headers.Authorization.ToString();

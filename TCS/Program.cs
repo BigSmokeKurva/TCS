@@ -39,11 +39,11 @@ namespace TCS
             //        defaults: new { controller = "App", action = "LoadPartialView" }
             //    );
             //});
-            app.MapControllerRoute(
-                    name: "page",
-                    pattern: "App/LoadPartialView",
-                    defaults: new { controller = "App", action = "LoadPartialView" }
-                );
+            //app.MapControllerRoute(
+            //        name: "page",
+            //        pattern: "App/LoadPartialView",
+            //        defaults: new { controller = "App", action = "LoadPartialView" }
+            //    );
 
             await app.RunAsync();
         }

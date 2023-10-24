@@ -18,6 +18,8 @@ body {
     /*-webkit-user-select: none;*/ /* Запрет выделения текста в Safari */
     /*-moz-tap-highlight-color: transparent;*/ /* Для Firefox */
     /*user-select: none;*/ /* Запрет выделения текста в большинстве браузеров */
+    -webkit-tap-highlight-color: transparent;
+    -moz-tap-highlight-color: transparent;
 }
 
 #form {

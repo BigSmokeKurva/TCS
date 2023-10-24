@@ -17,18 +17,25 @@ namespace TCS
             {
                 public string Password { get; set; }
             }
+            public class TokenCheckJson
+            {
+                public int Threads { get; set; }
+            }
             public DatabaseJson Database { get; set; }
             public RootAccountJson RootAccount { get; set; }
+            public TokenCheckJson TokenCheck { get; set; }
         }
 
         public static ConfigurationJson.DatabaseJson Database { get; set; }
         public static ConfigurationJson.RootAccountJson RootAccount { get; set; }
+        public static ConfigurationJson.TokenCheckJson TokenCheck { get; set; }
         public static string PageTitle = "TCS";
         internal static void Init()
         {
             var config = JsonSerializer.Deserialize<ConfigurationJson>(File.ReadAllText("configuration.json"));
             Database = config.Database;
             RootAccount = config.RootAccount;
+            TokenCheck = config.TokenCheck;
         }
     }
 }
