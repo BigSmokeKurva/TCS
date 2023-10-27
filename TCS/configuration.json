@@ -1,6 +1,6 @@
 {
 	"Database": {
-		"Host": "localhost",
+		"Host": "localhost:5432",
 		"Username": "postgres",
 		"Password": "iop3360A",
 		"DatabaseName": "testdb"

@@ -88,16 +88,27 @@ public class TokenCheck
                 var request = new HttpRequestMessage(HttpMethod.Post, "https://gql.twitch.tv/gql");
                 request.Headers.Add("Authorization", $"OAuth {token}");
                 request.Content = content;
-                using var response = await client.SendAsync(request);
+                var response = await client.SendAsync(request);
                 if (response is null)
                     return;
                 var json = await response.Content.ReadFromJsonAsync<CoreServicesJson[]>();
                 result.TryAdd(token, json[0].data.currentUser.login);
+                response.Dispose();
 
             }
             catch { }
         });
-        return new Dictionary<string, string>(result);
+        return UniqueValues(new Dictionary<string, string>(result));
+    }
+    private static Dictionary<string, string> UniqueValues(Dictionary<string, string> dictionary)
+    {
+        var result = new Dictionary<string, string>();
+        foreach (var item in dictionary)
+        {
+            if (!result.ContainsValue(item.Value))
+                result.Add(item.Key, item.Value);
+        }
+        return result;
     }
     public class CoreServicesJson
     {

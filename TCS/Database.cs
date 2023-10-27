@@ -25,11 +25,13 @@ namespace TCS
     }
     public class Database
     {
-        internal static NpgsqlConnection connection;
+        private static string connectionString;
         private static Timer timer;
         private static async void AutoCleanerSessions(object state)
         {
-            using (var cmd = connection.CreateCommand())
+            await using var connection = new NpgsqlConnection(connectionString);
+            await connection.OpenAsync();
+            await using (var cmd = connection.CreateCommand())
             {
                 cmd.CommandText = "DELETE FROM sessions WHERE expires < NOW();";
                 await cmd.ExecuteNonQueryAsync();
@@ -119,7 +121,7 @@ namespace TCS
                 """
 
             };
-            using (var connection = new NpgsqlConnection($"Host={Configuration.Database.Host};Username={Configuration.Database.Username};Password={Configuration.Database.Password};Database=postgres"))
+            await using (var connection = new NpgsqlConnection($"Host={Configuration.Database.Host};Username={Configuration.Database.Username};Password={Configuration.Database.Password};Database=postgres"))
             {
                 await connection.OpenAsync();
                 // Существует ли база данных
@@ -128,7 +130,7 @@ namespace TCS
                 {
                     cmd.CommandText = "select datname from pg_catalog.pg_database;";
                     //await cmd.ExecuteNonQueryAsync();
-                    using var reader = await cmd.ExecuteReaderAsync();
+                    await using var reader = await cmd.ExecuteReaderAsync();
                     while (await reader.ReadAsync())
                         databases.Add(reader.GetString(0));
                 }
@@ -141,22 +143,108 @@ namespace TCS
                 await connection.CloseAsync();
             }
             // Создание таблиц по необходимости
-            connection = new NpgsqlConnection($"Host={Configuration.Database.Host};Username={Configuration.Database.Username};Password={Configuration.Database.Password};Database={Configuration.Database.DatabaseName}");
-            await connection.OpenAsync();
-            foreach (var commandText in tables)
+            connectionString = $"Host={Configuration.Database.Host};Username={Configuration.Database.Username};Password={Configuration.Database.Password};Database={Configuration.Database.DatabaseName}";
+            await using (var connection = new NpgsqlConnection(connectionString))
             {
-                using var cmd = connection.CreateCommand();
-                cmd.CommandText = commandText;
-                await cmd.ExecuteNonQueryAsync();
+                await connection.OpenAsync();
+                foreach (var commandText in tables)
+                {
+                    using var cmd = connection.CreateCommand();
+                    cmd.CommandText = commandText;
+                    await cmd.ExecuteNonQueryAsync();
+                }
+                timer = new Timer(AutoCleanerSessions, null, 0, 3600000);
+
             }
-            timer = new Timer(AutoCleanerSessions, null, 0, 3600000);
         }
-        internal static async Task<string> CheckBusy(RegistrationModel data)
+        internal class SharedArea
         {
-            string result;
-            using (var cmd = connection.CreateCommand())
+            internal static async Task<int> GetId(string auth_token)
             {
-                cmd.CommandText = @"
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                int id;
+                await using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT id FROM sessions WHERE auth_token = @auth_token::uuid limit 1;";
+                    cmd.Parameters.AddWithValue("@auth_token", NpgsqlDbType.Uuid, Guid.Parse(auth_token));
+                    await using var reader = await cmd.ExecuteReaderAsync();
+                    await reader.ReadAsync();
+                    id = reader.GetInt32(0);
+                }
+                return id;
+            }
+            internal static async Task Log(int id, string message)
+            {
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                await using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "INSERT INTO logs (id, message, time) VALUES (@id, @Message, NOW());";
+                    cmd.Parameters.AddWithValue("@id", id);
+                    cmd.Parameters.AddWithValue("@Message", message);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+            internal static async Task<string> GetUsername(int id)
+            {
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                string username;
+                await using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT username FROM users WHERE id = @id limit 1;";
+                    cmd.Parameters.AddWithValue("@id", id);
+                    await using var reader = await cmd.ExecuteReaderAsync();
+                    await reader.ReadAsync();
+                    username = reader.GetString(0);
+                }
+                return username;
+            }
+            internal static async Task<bool> IsAdmin(int id)
+            {
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                bool isAdmin;
+                await using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT admin FROM users WHERE id = @id limit 1;";
+                    cmd.Parameters.AddWithValue("@id", id);
+                    await using var reader = await cmd.ExecuteReaderAsync();
+                    await reader.ReadAsync();
+                    isAdmin = reader.GetBoolean(0);
+                }
+                return isAdmin;
+            }
+            internal static async Task DeleteAuthToken(string auth_token)
+            {
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                await using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "DELETE FROM sessions WHERE auth_token = @auth_token::uuid;";
+                    cmd.Parameters.AddWithValue("@auth_token", NpgsqlDbType.Uuid, Guid.Parse(auth_token));
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+
+        }
+        internal class AuthArea
+        {
+            internal static async Task<string> CheckBusy(RegistrationModel data)
+            {
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                string result;
+                using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = @"
         SELECT
             CASE
                 WHEN EXISTS (SELECT 1 FROM users WHERE username = @Login) THEN 'Данный логин уже используется.'
@@ -164,23 +252,26 @@ namespace TCS
                 ELSE 'ОК'
             END AS result";
 
-                cmd.Parameters.AddWithValue("@Login", data.Login);
-                cmd.Parameters.AddWithValue("@Email", data.Email);
-                using var reader = await cmd.ExecuteReaderAsync();
-                await reader.ReadAsync();
-                result = reader.GetString(0);
-            }
-            return result;
+                    cmd.Parameters.AddWithValue("@Login", data.Login);
+                    cmd.Parameters.AddWithValue("@Email", data.Email);
+                    await using var reader = await cmd.ExecuteReaderAsync();
+                    await reader.ReadAsync();
+                    result = reader.GetString(0);
+                }
+                return result;
 
-        }
-        internal static async Task<int> AddUser(RegistrationModel data)
-        {
-            int id;
-            using (var cmd = connection.CreateCommand())
+            }
+            internal static async Task<int> AddUser(RegistrationModel data)
             {
-                //cmd.CommandText = "INSERT INTO users (username, password, email) VALUES (@Username, @Password, @Email) RETURNING id;";
-                cmd.CommandText =
-                    """
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                int id;
+                await using (var cmd = connection.CreateCommand())
+                {
+                    //cmd.CommandText = "INSERT INTO users (username, password, email) VALUES (@Username, @Password, @Email) RETURNING id;";
+                    cmd.CommandText =
+                        """
                     WITH inserted_user AS (
                         INSERT INTO users (username, password, email)
                         VALUES (@Username, @Password, @Email)
@@ -192,160 +283,81 @@ namespace TCS
                     returning id;
                     """;
 
-                cmd.Parameters.AddWithValue("@Username", data.Login);
-                cmd.Parameters.AddWithValue("@Password", data.Password);
-                cmd.Parameters.AddWithValue("@Email", data.Email);
+                    cmd.Parameters.AddWithValue("@Username", data.Login);
+                    cmd.Parameters.AddWithValue("@Password", data.Password);
+                    cmd.Parameters.AddWithValue("@Email", data.Email);
 
-                using var reader = await cmd.ExecuteReaderAsync();
-                await reader.ReadAsync();
-                id = reader.GetInt32(0);
-            }
-            return id;
-        }
-        internal static async Task<string> CreateSession(int id)
-        {
-            string auth_token;
-            using (var cmd = connection.CreateCommand())
-            {
-                cmd.CommandText = "INSERT INTO sessions (id, expires) VALUES (@Id, NOW() + INTERVAL '30 days') RETURNING auth_token;";
-                cmd.Parameters.AddWithValue("@Id", id);
-
-                using var reader = await cmd.ExecuteReaderAsync();
-                await reader.ReadAsync();
-                auth_token = reader.GetGuid(0).ToString();
-            }
-            return auth_token;
-        }
-        internal static async Task<bool> IsValidAuthToken(string auth_token)
-        {
-            bool isValid;
-            try
-            {
-                using (var cmd = connection.CreateCommand())
-                {
-                    // TODO
-                    cmd.CommandText = "SELECT EXISTS (SELECT 1 FROM sessions WHERE auth_token = @auth_token::uuid) AS exists_token;";
-                    cmd.Parameters.AddWithValue("@auth_token", NpgsqlDbType.Uuid, Guid.Parse(auth_token));
-                    using var reader = await cmd.ExecuteReaderAsync();
+                    await using var reader = await cmd.ExecuteReaderAsync();
                     await reader.ReadAsync();
-                    isValid = reader.GetBoolean(0);
+                    id = reader.GetInt32(0);
                 }
+                return id;
             }
-            catch
+            internal static async Task<int> CheckUser(AuthorizationModel data)
             {
-                isValid = false;
-            }
-            return isValid;
-        }
-        internal static async Task<int> CheckUser(AuthorizationModel data)
-        {
-            /// Возвращает -1, если пользователя нет
-            int userId = -1;
-            using (var cmd = connection.CreateCommand())
-            {
-                cmd.CommandText = "SELECT id FROM users WHERE username = @Login AND password = @Password LIMIT 1;";
-                cmd.Parameters.AddWithValue("@Login", data.Login);
-                cmd.Parameters.AddWithValue("@Password", data.Password);
+                /// Возвращает -1, если пользователя нет
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
 
-                using var reader = await cmd.ExecuteReaderAsync();
-                if (await reader.ReadAsync())
+                int userId = -1;
+                await using (var cmd = connection.CreateCommand())
                 {
-                    userId = reader.GetInt32(0);
+                    cmd.CommandText = "SELECT id FROM users WHERE username = @Login AND password = @Password LIMIT 1;";
+                    cmd.Parameters.AddWithValue("@Login", data.Login);
+                    cmd.Parameters.AddWithValue("@Password", data.Password);
+
+                    await using var reader = await cmd.ExecuteReaderAsync();
+                    if (await reader.ReadAsync())
+                    {
+                        userId = reader.GetInt32(0);
+                    }
                 }
+                return userId;
             }
-            return userId;
-        }
-        internal static async Task Log(int id, string message)
-        {
-            using (var cmd = connection.CreateCommand())
+            internal static async Task<string> CreateSession(int id)
             {
-                cmd.CommandText = "INSERT INTO logs (id, message, time) VALUES (@id, @Message, NOW());";
-                cmd.Parameters.AddWithValue("@id", id);
-                cmd.Parameters.AddWithValue("@Message", message);
-                await cmd.ExecuteNonQueryAsync();
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                string auth_token;
+                await using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "INSERT INTO sessions (id, expires) VALUES (@Id, NOW() + INTERVAL '30 days') RETURNING auth_token;";
+                    cmd.Parameters.AddWithValue("@Id", id);
+
+                    await using var reader = await cmd.ExecuteReaderAsync();
+                    await reader.ReadAsync();
+                    auth_token = reader.GetGuid(0).ToString();
+                }
+                return auth_token;
             }
-        }
-        internal static async Task<int> GetId(string auth_token)
-        {
-            int id;
-            using (var cmd = connection.CreateCommand())
+            internal static async Task<bool> IsValidAuthToken(string auth_token)
             {
-                cmd.CommandText = "SELECT id FROM sessions WHERE auth_token = @auth_token::uuid limit 1;";
-                cmd.Parameters.AddWithValue("@auth_token", NpgsqlDbType.Uuid, Guid.Parse(auth_token));
-                using var reader = await cmd.ExecuteReaderAsync();
-                await reader.ReadAsync();
-                id = reader.GetInt32(0);
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                bool isValid;
+                try
+                {
+                    await using (var cmd = connection.CreateCommand())
+                    {
+                        // TODO
+                        cmd.CommandText = "SELECT EXISTS (SELECT 1 FROM sessions WHERE auth_token = @auth_token::uuid) AS exists_token;";
+                        cmd.Parameters.AddWithValue("@auth_token", NpgsqlDbType.Uuid, Guid.Parse(auth_token));
+                        await using var reader = await cmd.ExecuteReaderAsync();
+                        await reader.ReadAsync();
+                        isValid = reader.GetBoolean(0);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                    isValid = false;
+                }
+                return isValid;
             }
-            return id;
-        }
-        internal static async Task<string> GetUsername(int id)
-        {
-            string username;
-            using (var cmd = connection.CreateCommand())
-            {
-                cmd.CommandText = "SELECT username FROM users WHERE id = @id limit 1;";
-                cmd.Parameters.AddWithValue("@id", id);
-                using var reader = await cmd.ExecuteReaderAsync();
-                await reader.ReadAsync();
-                username = reader.GetString(0);
-            }
-            return username;
-        }
-        internal static async Task<int> GetCountTokens(int id)
-        {
-            int count;
-            using (var cmd = connection.CreateCommand())
-            {
-                cmd.CommandText =
-                    """
-                    SELECT count(*) AS dictionary_length
-                    FROM (
-                      SELECT jsonb_object_keys(tokens) AS key
-                      FROM configuration
-                      WHERE id = @id
-                    ) AS subquery limit 1;
-                    """;
-                cmd.Parameters.AddWithValue("@id", id);
-                using var reader = await cmd.ExecuteReaderAsync();
-                await reader.ReadAsync();
-                count = reader.GetInt32(0);
-            }
-            return count;
-        }
-        internal static async Task<string> GetStreamerUsername(int id)
-        {
-            string username;
-            using (var cmd = connection.CreateCommand())
-            {
-                cmd.CommandText = "SELECT streamerUsername FROM configuration WHERE id = @id limit 1;";
-                cmd.Parameters.AddWithValue("@id", id);
-                using var reader = await cmd.ExecuteReaderAsync();
-                await reader.ReadAsync();
-                username = reader.GetString(0);
-            }
-            return username;
-        }
-        internal static async Task DeleteAuthToken(string auth_token)
-        {
-            using (var cmd = connection.CreateCommand())
-            {
-                cmd.CommandText = "DELETE FROM sessions WHERE auth_token = @auth_token::uuid;";
-                cmd.Parameters.AddWithValue("@auth_token", NpgsqlDbType.Uuid, Guid.Parse(auth_token));
-                await cmd.ExecuteNonQueryAsync();
-            }
-        }
-        internal static async Task<bool> IsAdmin(int id)
-        {
-            bool isAdmin;
-            using (var cmd = connection.CreateCommand())
-            {
-                cmd.CommandText = "SELECT admin FROM users WHERE id = @id limit 1;";
-                cmd.Parameters.AddWithValue("@id", id);
-                using var reader = await cmd.ExecuteReaderAsync();
-                await reader.ReadAsync();
-                isAdmin = reader.GetBoolean(0);
-            }
-            return isAdmin;
+
+
         }
         internal class AdminArea
         {
@@ -371,11 +383,14 @@ namespace TCS
             }
             internal static async Task<List<UserShort>> GetUsers()
             {
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
                 List<UserShort> users = new();
-                using (var cmd = connection.CreateCommand())
+                await using (var cmd = connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT id, username, email FROM users WHERE username != 'root';";
-                    using var reader = await cmd.ExecuteReaderAsync();
+                    await using var reader = await cmd.ExecuteReaderAsync();
                     while (reader.Read())
                     {
                         users.Add(new UserShort
@@ -390,8 +405,11 @@ namespace TCS
             }
             internal static async Task<UserInfo> GetUserInfo(int id)
             {
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
                 UserInfo userInfo;
-                using (var cmd = connection.CreateCommand())
+                await using (var cmd = connection.CreateCommand())
                 {
                     cmd.CommandText =
                         """
@@ -412,7 +430,7 @@ namespace TCS
                         LIMIT 1;
                         """;
                     cmd.Parameters.AddWithValue("@id", id);
-                    using var reader = await cmd.ExecuteReaderAsync();
+                    await using var reader = await cmd.ExecuteReaderAsync();
                     await reader.ReadAsync();
                     userInfo = new UserInfo
                     {
@@ -428,13 +446,16 @@ namespace TCS
             }
             internal static async Task<List<Log>> GetLogs(int id, string time)
             {
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
                 List<Log> logs = new();
-                using (var cmd = connection.CreateCommand())
+                await using (var cmd = connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT message, time FROM logs WHERE id = @id AND time::date = @time::date;";
                     cmd.Parameters.AddWithValue("@id", id);
                     cmd.Parameters.AddWithValue("@time", time);
-                    using var reader = await cmd.ExecuteReaderAsync();
+                    await using var reader = await cmd.ExecuteReaderAsync();
                     while (await reader.ReadAsync())
                     {
                         logs.Add(new Log
@@ -449,8 +470,11 @@ namespace TCS
             }
             internal static async Task<string> ChangeUsername(int id, string username)
             {
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
                 string result;
-                using (var cmd = connection.CreateCommand())
+                await using (var cmd = connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT change_username(@p_id, @new_username);";
                     cmd.Parameters.AddWithValue("@p_id", id);
@@ -461,7 +485,10 @@ namespace TCS
             }
             internal static async Task ChangePassword(int id, string password)
             {
-                using (var cmd = connection.CreateCommand())
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                await using (var cmd = connection.CreateCommand())
                 {
                     cmd.CommandText = "UPDATE users SET password = @password WHERE id = @id;";
                     cmd.Parameters.AddWithValue("@id", id);
@@ -471,8 +498,11 @@ namespace TCS
             }
             internal static async Task<string> ChangeEmail(int id, string email)
             {
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
                 string result;
-                using (var cmd = connection.CreateCommand())
+                await using (var cmd = connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT change_email(@p_id, @new_email);";
                     cmd.Parameters.AddWithValue("@p_id", id);
@@ -483,7 +513,10 @@ namespace TCS
             }
             internal static async Task ChangeAdmin(int id, bool admin)
             {
-                using (var cmd = connection.CreateCommand())
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                await using (var cmd = connection.CreateCommand())
                 {
                     cmd.CommandText = "UPDATE users SET admin = @admin WHERE id = @id;";
                     cmd.Parameters.AddWithValue("@id", id);
@@ -493,7 +526,10 @@ namespace TCS
             }
             internal static async Task ChangeTokens(int id, Dictionary<string, string> tokens)
             {
-                using (var cmd = connection.CreateCommand())
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                await using (var cmd = connection.CreateCommand())
                 {
                     cmd.CommandText = "UPDATE configuration SET tokens = @tokens WHERE id = @id;";
                     cmd.Parameters.AddWithValue("@tokens", NpgsqlDbType.Jsonb, tokens);
@@ -503,7 +539,10 @@ namespace TCS
             }
             internal static async Task ChangeProxies(int id, IEnumerable<Proxy> proxies)
             {
-                using (var cmd = connection.CreateCommand())
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                await using (var cmd = connection.CreateCommand())
                 {
                     cmd.CommandText = "UPDATE configuration SET proxies = @proxies WHERE id = @id;";
                     cmd.Parameters.AddWithValue("@proxies", NpgsqlDbType.Jsonb, proxies);
@@ -513,12 +552,15 @@ namespace TCS
             }
             internal static async Task<Dictionary<string, string>> GetTokens(int id)
             {
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
                 Dictionary<string, string> tokens;
-                using (var cmd = connection.CreateCommand())
+                await using (var cmd = connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT tokens FROM configuration WHERE id = @id LIMIT 1;";
                     cmd.Parameters.AddWithValue("@id", id);
-                    using var reader = await cmd.ExecuteReaderAsync();
+                    await using var reader = await cmd.ExecuteReaderAsync();
                     await reader.ReadAsync();
                     tokens = reader.GetFieldValue<Dictionary<string, string>>("tokens");
                 }
@@ -526,12 +568,15 @@ namespace TCS
             }
             internal static async Task<Proxy[]> GetProxies(int id)
             {
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
                 Proxy[] proxies;
-                using (var cmd = connection.CreateCommand())
+                await using (var cmd = connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT proxies FROM configuration WHERE id = @id LIMIT 1;";
                     cmd.Parameters.AddWithValue("@id", id);
-                    using var reader = await cmd.ExecuteReaderAsync();
+                    await using var reader = await cmd.ExecuteReaderAsync();
                     await reader.ReadAsync();
                     proxies = reader.GetFieldValue<Proxy[]>("proxies");
                 }
@@ -539,7 +584,10 @@ namespace TCS
             }
             internal static async Task DeleteUser(int id)
             {
-                using (var cmd = connection.CreateCommand())
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                await using (var cmd = connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT delete_user(@id);";
                     cmd.Parameters.AddWithValue("@id", id);
@@ -551,7 +599,10 @@ namespace TCS
         {
             internal static async Task UpdateStreamerUsername(int id, string username)
             {
-                using (var cmd = connection.CreateCommand())
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                await using (var cmd = connection.CreateCommand())
                 {
                     cmd.CommandText = "UPDATE configuration SET streamerUsername = @username WHERE id = @id;";
                     cmd.Parameters.AddWithValue("@username", username);
@@ -559,6 +610,62 @@ namespace TCS
                     await cmd.ExecuteNonQueryAsync();
                 }
             }
+            internal static async Task<List<string>> GetBotsNicks(int id)
+            {
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                List<string> bots;
+                await using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT value FROM configuration, jsonb_each(tokens) WHERE id = @id;";
+                    cmd.Parameters.AddWithValue("@id", id);
+                    await using var reader = await cmd.ExecuteReaderAsync();
+                    bots = reader.Cast<IDataRecord>().Select(x => x.GetString(0)).ToList();
+                }
+                return bots;
+            }
+            internal static async Task<int> GetCountTokens(int id)
+            {
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                int count;
+                await using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText =
+                        """
+                    SELECT count(*) AS dictionary_length
+                    FROM (
+                      SELECT jsonb_object_keys(tokens) AS key
+                      FROM configuration
+                      WHERE id = @id
+                    ) AS subquery limit 1;
+                    """;
+                    cmd.Parameters.AddWithValue("@id", id);
+                    await using var reader = await cmd.ExecuteReaderAsync();
+                    await reader.ReadAsync();
+                    count = reader.GetInt32(0);
+                }
+                return count;
+            }
+            internal static async Task<string> GetStreamerUsername(int id)
+            {
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                string username;
+                await using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT streamerUsername FROM configuration WHERE id = @id limit 1;";
+                    cmd.Parameters.AddWithValue("@id", id);
+                    await using var reader = await cmd.ExecuteReaderAsync();
+                    await reader.ReadAsync();
+                    username = reader.GetString(0);
+                }
+                return username;
+            }
+
         }
     }
 }

@@ -15,11 +15,11 @@ namespace TCS.Controllers
     }
 
     [ApiController]
-    [Route("api")]
-    public class AccountCreateAndLoginController : ControllerBase
+    [Route("api/auth")]
+    public class AuthApiController : ControllerBase
     {
-        private readonly ILogger<AccountCreateAndLoginController> _logger;
-        public AccountCreateAndLoginController(ILogger<AccountCreateAndLoginController> logger)
+        private readonly ILogger<AuthApiController> _logger;
+        public AuthApiController(ILogger<AuthApiController> logger)
         {
             _logger = logger;
         }
@@ -39,7 +39,7 @@ namespace TCS.Controllers
                 };
                 return Ok(data);
             }
-            error = await Database.CheckBusy(model);
+            error = await Database.AuthArea.CheckBusy(model);
             if (error != "ОК")
             {
                 var data = new
@@ -49,8 +49,8 @@ namespace TCS.Controllers
                 };
                 return Ok(data);
             }
-            int id = await Database.AddUser(model);
-            var auth_token = await Database.CreateSession(id);
+            int id = await Database.AuthArea.AddUser(model);
+            var auth_token = await Database.AuthArea.CreateSession(id);
             // Создание и добавление cookie в ответ
 
             var cookieOptions = new CookieOptions
@@ -62,7 +62,7 @@ namespace TCS.Controllers
             };
             Response.Cookies.Append("auth_token", auth_token, cookieOptions);
             // редирект на главную страницу
-            await Database.Log(id, "Зарегистрировался.");
+            await Database.SharedArea.Log(id, "Зарегистрировался.");
             return Ok(new
             {
                 status = "ok"
@@ -85,7 +85,7 @@ namespace TCS.Controllers
                 return Ok(data);
             }
             // проверка на существование пользователя
-            var id = await Database.CheckUser(model);
+            var id = await Database.AuthArea.CheckUser(model);
             if (id == -1)
             {
                 var data = new
@@ -96,7 +96,7 @@ namespace TCS.Controllers
                 return Ok(data);
             }
             // получаем токен сессии
-            var auth_token = await Database.CreateSession(id);
+            var auth_token = await Database.AuthArea.CreateSession(id);
             var cookieOptions = new CookieOptions
             {
                 HttpOnly = false, // Чтобы предотвратить доступ к cookie средствами JavaScript
@@ -105,7 +105,7 @@ namespace TCS.Controllers
                 Expires = DateTime.UtcNow.AddMonths(1)
             };
             Response.Cookies.Append("auth_token", auth_token, cookieOptions);
-            await Database.Log(id, "Авторизовался.");
+            await Database.SharedArea.Log(id, "Авторизовался.");
             // редирект на главную страницу
             return Ok(new
             {
@@ -119,11 +119,11 @@ namespace TCS.Controllers
         {
             // Получаем токен сессии из cookie
             var auth_token = Request.Cookies["auth_token"];
-            if (!await Database.IsValidAuthToken(auth_token))
+            if (!await Database.AuthArea.IsValidAuthToken(auth_token))
                 return Ok(new { status = "ok" });
             // удалением его из базы
             if (auth_token is not null)
-                await Database.DeleteAuthToken(auth_token);
+                await Database.SharedArea.DeleteAuthToken(auth_token);
             // Удаляем все cookie на сайте
             foreach (var cookie in Request.Cookies.Keys)
             {

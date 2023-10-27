@@ -7,15 +7,8 @@ namespace TCS.Pages
         public async Task OnGet()
         {
             var auth_token = Request.Cookies["auth_token"];
-            if (auth_token is not null && await Database.IsValidAuthToken(auth_token))
-            {
-                // TODO переадресация на основную страницу
-                // Пользователь авторизован
-                //Response.Redirect("/");
-                Response.Redirect("/");
-                return;
-            }
-            return;
+            if (auth_token is not null && await Database.AuthArea.IsValidAuthToken(auth_token))
+                Response.Redirect("/App");
         }
     }
 }

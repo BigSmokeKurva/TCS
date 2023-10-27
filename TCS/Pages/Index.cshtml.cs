@@ -1,17 +1,24 @@
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using TCS.Filters;
 
 namespace TCS.Pages
 {
-    [TypeFilter(typeof(AuthTokenPageFilter))]
     public class IndexModel : PageModel
     {
 
         //public bool IsAuthorized;
         public async Task OnGet()
         {
-            Response.Redirect("/App");
+            var auth_token = Request.Cookies["auth_token"];
+            if (auth_token is not null && await Database.AuthArea.IsValidAuthToken(auth_token))
+            {
+                Response.Redirect("/App");
+                return;
+            }
+            foreach (var cookie in Request.Cookies.Keys)
+            {
+                Response.Cookies.Delete(cookie);
+            }
+            Response.Redirect("/Authorization");
         }
     }
 }

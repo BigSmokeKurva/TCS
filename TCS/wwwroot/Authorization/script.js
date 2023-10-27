@@ -15,6 +15,7 @@ function updateUnderline(element) {
 function clickAuth() {
     if (!(validateLogin() & validatePassword()))
         return;
+
     var login = $('#login').val();
     var password = $('#password').val();
 
@@ -23,25 +24,29 @@ function clickAuth() {
         password: password
     };
 
-    $.ajax({
-        type: "POST",
-        url: "/api/authorization",
-        data: JSON.stringify(requestData), // Преобразуем данные в JSON
-        contentType: "application/json", // Устанавливаем заголовок Content-Type
-        success: function (response) {
-            // Обработка успешного ответа от сервера
-            if (response.status == "error") {
-                showNotification(response.message);
-                return;
-            }
-            window.location.href = "/";
+    fetch("/api/auth/authorization", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
         },
-        error: function (error) {
-            // Обработка ошибки
+        body: JSON.stringify(requestData)
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw Error();
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === "error") {
+                showNotification(data.message);
+            } else {
+                window.location.href = "/App";
+            }
+        })
+        .catch(error => {
             showNotification("Произошла ошибка при авторизации. Попробуйте позже.");
-        }
-    });
-
+        });
 }
 
 function clickReg() {
@@ -58,24 +63,29 @@ function clickReg() {
         password: password
     };
 
-    $.ajax({
-        type: "POST",
-        url: "/api/registration",
-        data: JSON.stringify(requestData), // Преобразуем данные в JSON
-        contentType: "application/json", // Устанавливаем заголовок Content-Type
-        success: function (response) {
-            // Обработка успешного ответа от сервера
-            if (response.status == "error") {
-                showNotification(response.message);
-                return;
-            }
-            window.location.href = "/";
+    fetch("/api/auth/registration", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
         },
-        error: function (error) {
-            // Обработка ошибки
+        body: JSON.stringify(requestData)
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw Error();
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === "error") {
+                showNotification(data.message);
+            } else {
+                window.location.href = "/";
+            }
+        })
+        .catch(error => {
             showNotification("Произошла ошибка при регистрации. Попробуйте позже.");
-        }
-    });
+        });
 }
 
 function showNotification(notificationText) {

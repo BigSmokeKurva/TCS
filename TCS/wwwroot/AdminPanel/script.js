@@ -60,35 +60,47 @@ async function getInfoForSelectedUser() {
     const auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
 
     try {
-        const data = await $.ajax({
-            url: 'api/admin/getuserinfo?id=' + selectedUser.id,
-            type: 'GET',
-            dataType: 'json',
+        const response = await fetch('api/admin/getuserinfo?id=' + selectedUser.id, {
+            method: 'GET',
             headers: {
                 "Authorization": auth_token
             }
         });
+
+        if (!response.ok) {
+            showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+            return null; // или верните значение по умолчанию
+        }
+
+        const data = await response.json();
         return data;
     } catch (error) {
         showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+        return null; // или верните значение по умолчанию
     }
 }
 
 function getLogs() {
     var selectedTime = $logsSelectedOption.find('span').text();
     var auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
-    $.ajax({
-        url: 'api/admin/getlogs?id=' + selectedUser.id + '&time=' + selectedTime,
-        type: 'GET',
-        dataType: 'json',
+
+    fetch('api/admin/getlogs?id=' + selectedUser.id + '&time=' + selectedTime, {
+        method: 'GET',
         headers: {
             "Authorization": auth_token
-        },
-        success: function (logs) {
+        }
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw Error();
+            }
+            return response.json();
+        })
+        .then(logs => {
             var logsContainer = $("#logs > div.list.list-logs");
             logsContainer.empty();
 
-            $.each(logs, function (index, log) {
+            logs.forEach(log => {
                 var logTime = new Date(log.time);
                 var formattedTime = logTime.toLocaleTimeString();
 
@@ -102,11 +114,10 @@ function getLogs() {
                 var underlineDiv = $("<div>").addClass("logs_underline");
                 logsContainer.append(underlineDiv);
             });
-        },
-        error: function (xhr, status, error) {
-            // Обработка ошибки
-        }
-    });
+        })
+        .catch(error => {
+            showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+        });
 }
 
 async function selectUser(button) {
@@ -157,38 +168,37 @@ async function selectUser(button) {
 }
 
 function getUsers() {
-    // Получение списка пользователей
     var auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
-    $.ajax({
-        url: 'api/admin/getusers',
-        type: 'GET',
-        dataType: 'json',
+
+    fetch('api/admin/getusers', {
+        method: 'GET',
         headers: {
             "Authorization": auth_token
-        },
-        success: function (data) {
-            // Обработка успешного ответа
-            var items = data.map(function (user) {
+        }
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw Error();
+            }
+            return response.json();
+        })
+        .then(data => {
+            var usersList = $('#users.list');
+            usersList.empty();
 
-                // Создаем кнопку и добавляем обработчик события
+            data.forEach(user => {
                 var btn = $('<button>', { user_id: user.id }).text(user.username).on('click', function () {
                     selectUser(this);
                 });
                 users[user.id] = user;
-                // Создаем элемент <div> с классом "item" и добавляем кнопку в него
+
                 var item = $('<div>').addClass('item').append(btn);
-
-                return item.get(0); // Получаем DOM-элемент из jQuery объекта
+                usersList.append(item);
             });
-
-            // Добавляем массив элементов к элементу с классом "list"
-            $('#users.list').append(items);
-
-        },
-        error: function (xhr, status, error) {
-            // Обработка ошибки
-        }
-    });
+        })
+        .catch(error => {
+            showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+        });
 }
 
 function searchUser() {
@@ -236,27 +246,34 @@ async function sendEditUserRequest(property, value) {
         value: value
     };
     var auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+
     try {
-        var response = await $.ajax({
-            url: 'api/admin/edituser',
-            type: 'POST',
-            contentType: 'application/json',
+        const response = await fetch('api/admin/edituser', {
+            method: 'POST',
             headers: {
-                "Authorization": auth_token
+                "Authorization": auth_token,
+                "Content-Type": "application/json"
             },
-            data: JSON.stringify(data)
+            body: JSON.stringify(data)
         });
-        if (response.status != 'ok') {
-            showNotification(response.message);
+
+        if (!response.ok) {
+            showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
             return false;
         }
-        return response;
+
+        const responseData = await response.json();
+        if (responseData.status !== 'ok') {
+            showNotification(responseData.message);
+            return false;
+        }
+
+        return responseData;
     } catch (error) {
         // Обработка ошибки
         showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
         return false;
     }
-
 }
 
 async function editUserEditable(selector, property) {
@@ -353,59 +370,76 @@ function download(data, fileName) {
 }
 
 async function downloadTokens() {
-    var auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+    const auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+
     try {
-        const data = await $.ajax({
-            url: 'api/admin/gettokens?id=' + selectedUser.id,
-            type: 'GET',
-            dataType: 'json',
+        const response = await fetch('api/admin/gettokens?id=' + selectedUser.id, {
+            method: 'GET',
             headers: {
                 "Authorization": auth_token
             }
         });
+
+        if (!response.ok) {
+            showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+            return;
+        }
+        const data = await response.json();
+
         let resultString = "";
+
         // Перебираем элементы словаря
         for (const key in data) {
             if (data.hasOwnProperty(key)) {
                 resultString += key + ":" + data[key] + "\n";
             }
         }
+
         download(resultString, 'tokensAndUsernames.txt');
         resultString = "";
+
         // Перебираем элементы словаря
         for (const key in data) {
             if (data.hasOwnProperty(key)) {
                 resultString += key + "\n";
             }
         }
+
         download(resultString, 'tokens.txt');
 
     } catch (error) {
         showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
     }
-
 }
 
 async function downloadProxies() {
-    var auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+    const auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+
     try {
-        const data = await $.ajax({
-            url: 'api/admin/getproxies?id=' + selectedUser.id,
-            type: 'GET',
-            dataType: 'json',
+        const response = await fetch('api/admin/getproxies?id=' + selectedUser.id, {
+            method: 'GET',
             headers: {
                 "Authorization": auth_token
             }
         });
+
+        if (!response.ok) {
+            showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+            return;
+        }
+
+        const data = await response.json();
+
         let resultString = "";
+
         data.forEach(proxy => {
-            resultString+= proxy + "\n";
+            resultString += proxy + "\n";
         });
+
         download(resultString, 'proxies.txt');
     } catch (error) {
         showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
     }
-
 }
 
 function setupFileInput(input, uploadFunction) {
@@ -421,20 +455,23 @@ $(document).ready(function () {
     getUsers();
     search.on('input', searchUser);
     $("#exit-button").on("click", function () {
-        $.ajax({
-            type: "GET",
-            url: "/api/unauthorization",
-            success: function (response) {
-                // Обработка успешного ответа от сервера
-                if (response.status == "ok") {
+        fetch("/api/auth/unauthorization", {
+            method: "GET"
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw Error();
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === "ok") {
                     window.location.href = "/";
                 }
-            },
-            error: function (error) {
+            })
+            .catch(error => {
                 // Обработка ошибки
-            }
-        });
-
+            });
     });
     $logsSelectedOption.on('click', function (e) {
         e.stopPropagation();
@@ -465,7 +502,7 @@ $(document).ready(function () {
         selectedUserInfo.password = $('#password').text();
     });
     $('#info-panel span[contenteditable]').on('keydown', function (e) {
-        if(e.keyCode == 13) {
+        if (e.keyCode == 13) {
             e.preventDefault();
             $(this).find('+ button').click();
         }
@@ -492,19 +529,27 @@ $(document).ready(function () {
     });
 
     $('.delete-account-button').on('click', async function () {
-        var auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+        const auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+
         try {
-            const data = await $.ajax({
-                url: 'api/admin/deleteuser?id=' + selectedUser.id,
-                type: 'GET',
-                dataType: 'json',
+            const response = await fetch('api/admin/deleteuser?id=' + selectedUser.id, {
+                method: 'DELETE',
                 headers: {
                     "Authorization": auth_token
                 }
             });
+
+            if (!response.ok) {
+                showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+                return;
+            }
+
+            const data = await response.json();
+
             if (data.status !== 'ok') {
                 throw new Error();
             }
+
             $('#users > div > button[disabled]').remove();
             delete users[selectedUser.id];
             selectedUserInfo = null;
@@ -513,7 +558,6 @@ $(document).ready(function () {
         } catch (error) {
             showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
         }
-
     });
 });
 

@@ -3,11 +3,11 @@
 @using TCS;
 @{
     var auth_token = Request.Cookies["auth_token"];
-    var id = await Database.GetId(auth_token);
-    var username = await Database.GetUsername(id);
-    var count_tokens = await Database.GetCountTokens(id);
-    var streamerUsername = await Database.GetStreamerUsername(id);
-    var isAdmin = await Database.IsAdmin(id);
+    var id = await Database.SharedArea.GetId(auth_token);
+    var username = await Database.SharedArea.GetUsername(id);
+    var count_tokens = await Database.AppArea.GetCountTokens(id);
+    var streamerUsername = await Database.AppArea.GetStreamerUsername(id);
+    var isAdmin = await Database.SharedArea.IsAdmin(id);
 }
 
 <html>
@@ -30,13 +30,13 @@
             <button id="exit-button">ВЫЙТИ</button>
         </div>
         <div class="streamer-username-container">
-            <input type="text" placeholder="ник стримера" value="@streamerUsername" disabled/>
+            <input type="text" placeholder="ник стримера" value="@streamerUsername" disabled />
             <button>
                 <img src="~/App/edit.svg" alt="Редактировать" />
             </button>
         </div>
         <div class="status">
-            Канал: <span>@(string.IsNullOrEmpty(streamerUsername) ? "не указан" : streamerUsername)</span>Статус: <span>ошибка</span>
+            Канал: <span id="status-streamerusername">@(string.IsNullOrEmpty(streamerUsername) ? "не указан" : streamerUsername)</span>Статус: <span id="status-streameronline"></span>
             <br />
             Всего ботов доступно: <span>@count_tokens</span>
         </div>
@@ -45,16 +45,54 @@
                 <button class="button" id="spam-btn">Спам</button>
                 <button class="button" id="binds-btn">Бинды</button>
                 <button class="button" id="manual-btn">Ручная отправка</button>
-                <div id="background_underline" class="underline">
+                <div class="background_underline underline">
                     <div></div>
                 </div>
                 <div class="underline" id="underline"></div>
             </div>
         </div>
+        <div id="content-container">
+            <div id="bots-list">
+                <span>Ник бота</span>
+                <div class="custom-select" id="func-select">
+                    <div class="selected-option">
+                        <span>Массовое</span>
+                        <div>
+                            <img class="triangle-close" src="~/App/triangle.svg" alt="" />
+                        </div>
+                    </div>
+                    <ul class="options" id="func-list">
+                        <li>подключить</li>
+                        <li>отключить</li>
+                    </ul>
+                </div>
+                <div class="background_line"></div>
+                <div id="list-container">
+                    <div class="list" id="bots"></div>
+                </div>
+
+            </div>
+            <div id="content"></div>
+            <div id="stream-content">
+                <iframe src="https://player.twitch.tv/?channel=@(string.IsNullOrEmpty(streamerUsername) ? "-" : streamerUsername)&parent=localhost"
+                        height="100%"
+                        width="100%"
+                        frameborder="0"
+                        scrolling="no">
+                </iframe>
+                <iframe src="https://www.twitch.tv/embed/@(string.IsNullOrEmpty(streamerUsername) ? "-" : streamerUsername)/chat?darkpopout&parent=localhost"
+                        height="100%"
+                        width="100%"
+                        frameborder="0"
+                        sandbox="allow-scripts allow-same-origin">
+                </iframe>
+            </div>
+
+        </div>
+
     </div>
-    <div id="content"></div>
     <div class="notification-container" id="notification-container"></div>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="~/App/script.js"></script>
 
 </body>

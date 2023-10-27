@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+using TCS.Filters;
 
 namespace TCS.Controllers
 {
 
     [Route("api/admin")]
     [ApiController]
+    [TypeFilter(typeof(AdminAuthorizationFilter))]
     public class AdminPanelApiController : ControllerBase
     {
         public enum ChangeType
@@ -25,20 +27,14 @@ namespace TCS.Controllers
             public JsonElement Value { get; set; }
         }
 
-        private async Task<bool> IsAdmin()
-        {
-            var auth_token = Request.Headers.Authorization.ToString();
-            return auth_token is not null && await Database.IsValidAuthToken(auth_token) && await Database.IsAdmin(await Database.GetId(auth_token));
-        }
-
         [HttpGet]
         [Route("getusers")]
         public async Task<ActionResult> GetUsers()
         {
-            if (!await IsAdmin())
-            {
-                return Unauthorized();
-            }
+            //if (!await IsAdmin())
+            //{
+            //    return Unauthorized();
+            //}
             return Ok(await Database.AdminArea.GetUsers());
         }
 
@@ -46,10 +42,6 @@ namespace TCS.Controllers
         [Route("getuserinfo")]
         public async Task<ActionResult> GetUserInfo(int id)
         {
-            if (!await IsAdmin())
-            {
-                return Unauthorized();
-            }
             return Ok(await Database.AdminArea.GetUserInfo(id));
         }
 
@@ -57,10 +49,6 @@ namespace TCS.Controllers
         [Route("getlogs")]
         public async Task<ActionResult> GetLogs(int id, string time)
         {
-            if (!await IsAdmin())
-            {
-                return Unauthorized();
-            }
             return Ok(await Database.AdminArea.GetLogs(id, time));
         }
 
@@ -69,10 +57,6 @@ namespace TCS.Controllers
         public async Task<ActionResult> EditUser([FromBody] EditUserModel model)
         {
             string result;
-            if (!await IsAdmin())
-            {
-                return Unauthorized();
-            }
             switch (model.Property)
             {
                 case ChangeType.Username:
@@ -130,7 +114,8 @@ namespace TCS.Controllers
                     await Database.AdminArea.ChangeAdmin(model.Id, model.Value.GetBoolean());
                     break;
                 case ChangeType.Tokens:
-                    var tokensChecked = await TokenCheck.Check(model.Value.EnumerateArray().Select(x => x.GetString()));
+                    var tokens = model.Value.EnumerateArray().Select(x => x.GetString()).Distinct();
+                    var tokensChecked = (await TokenCheck.Check(tokens: tokens));
                     await Database.AdminArea.ChangeTokens(model.Id, tokensChecked);
                     return Ok(new
                     {
@@ -156,10 +141,6 @@ namespace TCS.Controllers
         [Route("gettokens")]
         public async Task<ActionResult> GetTokens(int id)
         {
-            if (!await IsAdmin())
-            {
-                return Unauthorized();
-            }
             return Ok(await Database.AdminArea.GetTokens(id));
         }
 
@@ -167,22 +148,14 @@ namespace TCS.Controllers
         [Route("getproxies")]
         public async Task<ActionResult> GetProxies(int id)
         {
-            if (!await IsAdmin())
-            {
-                return Unauthorized();
-            }
             var proxies = await Database.AdminArea.GetProxies(id);
             return Ok(ProxyCheck.ProxyToString(proxies));
         }
 
-        [HttpGet]
+        [HttpDelete]
         [Route("deleteuser")]
         public async Task<ActionResult> DeleteUser(int id)
         {
-            if (!await IsAdmin())
-            {
-                return Unauthorized();
-            }
             await Database.AdminArea.DeleteUser(id);
             return Ok(new
             {

@@ -90,7 +90,7 @@ body {
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        margin-top:3.5px;
+        margin-top: 3.5px;
     }
 
         .streamer-username-container button > img {
@@ -176,7 +176,7 @@ body {
     transition: width 0.3s, left 0.3s;
 }
 
-#background_underline {
+.background_underline {
     background-color: transparent;
     width: 100%;
     height: 2px;
@@ -186,11 +186,12 @@ body {
     align-items: center;
 }
 
-    #background_underline > div {
+    .background_underline > div {
         width: 100%;
         background-color: rgb(64, 66, 70);
         height: 2px;
     }
+
 
 .notification {
     position: absolute;
@@ -235,15 +236,242 @@ body {
     margin-right: 10px; /* Отступ между изображением и текстом */
 }
 
+#content-container {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-column: span 2;
+}
+
+    #content-container #stream-content {
+        display: inline-grid;
+        width: 374px;
+        margin-top: 20px;
+    }
+
+#stream-content > iframe:nth-child(1) {
+    height: 24.45vh;
+}
+
+#stream-content > iframe:nth-child(2) {
+    height: 48.3vh;
+}
+
+#bots-list {
+    width: 350px;
+    margin-top: 8px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto 1fr;
+}
+
+    #bots-list > span {
+        font-size: 18px;
+        font-family: Inter-SemiBold;
+        color: white;
+        display: flex;
+        align-items: end;
+    }
+
+/* Стили для кастомного выпадающего списка */
+.custom-select {
+    position: relative;
+    width: 143px;
+    -webkit-user-select: none;
+    user-select: none;
+    margin-top: 8px;
+}
+
+.selected-option {
+    /*padding: 5px;*/
+    background-color: transparent; /* Фоновый цвет */
+    cursor: pointer;
+    height: 34px;
+    border-radius: 4px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    border: 2px solid rgb(176,162,252);
+}
+
+    .selected-option > span {
+        display: flex;
+        justify-content: center; /* Центрирование по вертикали */
+        align-items: center; /* Центрирование по горизонтали */
+        color: rgb(176,162,252); /* Цвет текста */
+        font-size: 18px;
+    }
+
+    .selected-option > div {
+        display: flex;
+        justify-content: center; /* Центрирование по вертикали */
+        margin-right: 10px;
+    }
+
+.triangle-open {
+    transform: rotate(180deg);
+    transition: transform 0.1s ease-in-out;
+}
+
+.triangle-close {
+    transform: rotate(0deg);
+    transition: transform 0.1s ease-in-out;
+}
+
+.selected-option-active {
+    border-radius: 4px 4px 0 0;
+    /*border-bottom: 1px solid transparent;*/
+}
+
+.options {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: none;
+    position: absolute;
+    background-color: rgb(33, 33, 38); /* Фоновый цвет опций */
+    color: rgb(176,162,252); /* Цвет текста опций */
+    border: 2px solid rgb(176,162,252);
+    border-top: 0;
+    overflow-y: auto;
+    max-height: 200px;
+    overflow-x: hidden;
+    scrollbar-width: thin; /* Для Firefox */
+    scrollbar-color: rgb(174, 160, 248) rgb(46, 47, 51); /* Для Firefox */
+    width: -webkit-fill-available;
+    width: -moz-available;
+    border-radius: 0 0 4px 4px;
+    top: 35px;
+}
+
+    .options::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .options::-webkit-scrollbar-thumb {
+        background-color: rgb(118, 104, 203);
+        border-radius: 2px;
+    }
+
+    .options::-webkit-scrollbar-track {
+        background-color: transparent;
+    }
+
+
+    .options li {
+        font-size: 18px;
+        cursor: pointer;
+        height: 31px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center; /* Центрирование по вертикали */
+        align-items: center; /* Центрирование по горизонтали */
+        transition: background-color 0.1s
+    }
+
+        .options li:hover {
+            background-color: rgb(122,122,122);
+        }
+
+        .options li.selected {
+            background-color: rgb(118, 104, 203);
+            color: white;
+        }
+
+.background_line {
+    background-color: rgb(64, 66, 70);
+    width: 100%;
+    height: 2px;
+}
+
+#bots-list > .background_line {
+    grid-column: span 2;
+    margin-top: 4px;
+}
+
+#list-container {
+    width: 100%;
+    grid-column: span 2;
+    margin-top: 21px;
+}
+
+.list {
+    /*max-height: 156px;*/
+    height: 65.68vh;
+    overflow-y: auto;
+    scrollbar-width: thin; /* Для Firefox */
+    scrollbar-color: rgb(174, 160, 248) rgb(46, 47, 51); /* Для Firefox */
+}
+
+    .list::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .list::-webkit-scrollbar-thumb {
+        background-color: rgb(118, 104, 203);
+        /*border: 2px solid rgb(46, 47, 51);*/
+        border-radius: 2px;
+    }
+
+    .list::-webkit-scrollbar-track {
+        background-color: transparent;
+    }
+
+
+.item {
+    margin-right: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: transparent;
+    transition: background-color 0.1s;
+    border-radius:4px;
+}
+
+    .item:hover {
+        background-color: rgb(46,45,50);
+    }
+
+    .item button {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        /*padding: 5px 10px;*/
+        transition: background-color 0.1s;
+        height: 36px;
+        width: 36px;
+        border-radius: 4px;
+        padding: 0;
+    }
+
+    .item span {
+        color: rgb(192,192,194);
+        font-size: 18px;
+        margin-left:5px;
+    }
+
 
 @media (max-width: 768px) {
     body {
         margin: 40px 45px 0 45px;
     }
 
+    #content-container {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
+    }
+
+        #content-container #stream-content {
+            display: inline-grid;
+            width: 100%;
+        }
+
+        #content-container #content {
+            grid-row: 2;
+        }
+
+
     #main_grid {
         grid-template-columns: 1fr;
-        grid-template-rows: auto auto auto auto auto;
+        grid-template-rows: auto auto auto auto auto auto;
     }
 
     #title {
@@ -278,7 +506,7 @@ body {
             height: 31px;
             width: 31px;
             margin-left: 5px;
-            margin-top:0;
+            margin-top: 0;
         }
 
         .streamer-username-container input {

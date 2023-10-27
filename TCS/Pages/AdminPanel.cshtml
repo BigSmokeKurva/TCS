@@ -3,8 +3,8 @@
 @using TCS;
 @{
     var auth_token = Request.Cookies["auth_token"];
-    var id = await Database.GetId(auth_token);
-    var username = await Database.GetUsername(id);
+    var id = await Database.SharedArea.GetId(auth_token);
+    var username = await Database.SharedArea.GetUsername(id);
 }
 <html>
 <head>
@@ -94,9 +94,7 @@
                 </div>
                 <div class="custom-select" id="logs-select">
                     <div class="selected-option">
-                        <span>
-                            Выбрать
-                        </span>
+                        <span></span>
                         <div>
                             <img class="triangle-close" src="~/AdminPanel/triangle.svg" alt="" />
                         </div>
@@ -116,7 +114,7 @@
     </div>
     <input type="file" id="fileInput" accept=".txt" style="display: none;">
     <div class="notification-container" id="notification-container"></div>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="~/AdminPanel/script.js"></script>
 </body>
 </html>

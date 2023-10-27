@@ -4,7 +4,7 @@ using TCS.Filters;
 
 namespace TCS.Pages
 {
-    [TypeFilter(typeof(AuthTokenPageFilter))]
+    [TypeFilter(typeof(UserAuthorizationFilter))]
     public class AppModel : PageModel
     {
         public void OnGet()
