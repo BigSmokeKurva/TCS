@@ -6,7 +6,101 @@ const notificationContainer = document.getElementById('notification-container');
 var streamerUsername = $('.streamer-username-container > input').val();
 const $masSelectedOption = $('#func-select > .selected-option');
 const $masOptions = $('#func-select > .options');
+var avalibleMasClick = true;
+const history = [];
+var historyIndex = 0;
+var isRandom = false;
 
+function scrollBotList() {
+    var targetElement = document.getElementById('bots'); // Получите контейнер по его ID
+    var newSelectedBotItem = document.querySelector('#bots-list #bots div[class="item selected-item"]'); // Получите элемент, до которого хотите проскроллить, по его ID
+    var elementRect = newSelectedBotItem.getBoundingClientRect();
+    var containerRect = targetElement.getBoundingClientRect();
+
+    if (
+        elementRect.top < containerRect.top ||
+        elementRect.bottom > containerRect.bottom
+    ) {
+        // Элемент не полностью виден, прокручиваем к нему
+        var elementTopRelativeToContainer = elementRect.top - containerRect.top;
+        targetElement.scrollTop += elementTopRelativeToContainer;
+    }
+
+}
+
+function nextBtn() {
+    var selectedBotname = history[historyIndex];
+    var selectedBotItem = $('#bots-list div[botname="' + selectedBotname + '"]');
+    if (selectedBotItem.length === 0) {
+        return;
+    }
+    selectedBotItem.removeClass('selected-item');
+    if (history.length == historyIndex + 1) {
+        if (isRandom) {
+            var newSelectedBotItem;
+            if ($('#bots-list #bots [state="connected"]').length == 0) {
+                newSelectedBotItem = selectedBotItem;
+            } else {
+                do {
+                    var randomIndex = Math.floor(Math.random() * $('#bots-list #bots [state="connected"]').length);
+                    newSelectedBotItem = $($('#bots-list #bots [state="connected"]')[randomIndex])
+                } while (newSelectedBotItem.is(selectedBotItem) && !$('#bots-list #bots [state="connected"]').length == 1);
+
+            }
+            var newSelectedBotname = newSelectedBotItem.attr('botname');
+        }
+        else if ($("#bots-list #bots div:last").is(selectedBotItem)) {
+            var newSelectedBotItem = $('#bots-list #bots :first');
+            var newSelectedBotname = newSelectedBotItem.attr('botname');
+        }
+        else {
+            var newSelectedBotItem = selectedBotItem.next();
+            var newSelectedBotname = newSelectedBotItem.attr('botname');
+        }
+        newSelectedBotItem.addClass('selected-item');
+        history.push(newSelectedBotname);
+        if (history.length > 10) {
+            history.shift();
+            historyIndex = 9;
+        }
+        else if (history.length == 1) {
+            historyIndex = 0;
+        }
+        else {
+            historyIndex++;
+        }
+    }
+    else {
+        var newSelectedBotItem = $('#bots-list div[botname="' + history[historyIndex + 1] + '"]');
+        newSelectedBotItem.addClass('selected-item');
+        historyIndex++;
+    }
+    scrollBotList();
+
+}
+
+function prevBtn() {
+    if (historyIndex === 0 || history.length == 0) {
+        return;
+    }
+    var selectedBotname = history[historyIndex];
+    var selectedBotItem = $('#bots-list div[botname="' + selectedBotname + '"]');
+    selectedBotItem.removeClass('selected-item');
+    var newSelectedBotItem = $('#bots-list div[botname="' + history[historyIndex - 1] + '"]');
+    newSelectedBotItem.addClass('selected-item');
+    historyIndex--;
+    scrollBotList();
+
+}
+
+function randomBtn() {
+    isRandom = !isRandom;
+    if (isRandom) {
+        $('#random-btn > img').attr('src', '/App/random_active.svg');
+        return;
+    }
+    $('#random-btn > img').attr('src', '/App/random.svg');
+}
 
 function showNotification(notificationText) {
     const notification = document.createElement('div');
@@ -176,21 +270,214 @@ function getBots() {
 
             Object.keys(data).forEach(function (key) {
                 let value = data[key];
-                var $div = $('<div>').addClass('item');
+                var $div = $('<div>', {
+                    'class': 'item',
+                    'botname': key,
+                    'state': value ? 'connected' : 'disconnected'
+                });
                 var $span = $('<span>').text(key);
                 var $button = $('<button>');
                 var $img = $('<img>').attr({
                     src: value ? '/App/disconnect_bot.svg' : '/App/connect_bot.svg',
                     alt: ''
                 });
+                $button.on('click', toggleBot);
+                $div.on('click', function () {
+                    $('#bots-list div[botname]').removeClass('selected-item');
+                    $(this).addClass('selected-item');
+                    history.push($(this).attr('botname'));
+                    if (history.length > 10) {
+                        history.shift();
+                        historyIndex = 9;
+                    }
+                    else if (history.length == 1) {
+                        historyIndex = 0;
+                    }
+                    else {
+                        historyIndex++;
+                    }
+                });
 
                 $button.append($img);
                 $div.append($span, $button);
                 $botsContainer.append($div);
             });
+            $('#bots .item').first().click();
+
         })
         .catch(error => {
             // Обработка ошибки
+        });
+}
+
+function pingPong() {
+    var auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+    fetch("api/app/ping", {
+        method: "GET",
+        headers: {
+            "Authorization": auth_token
+        }
+    });
+}
+
+async function toggleBot() {
+    if (!avalibleMasClick) {
+        return;
+    }
+    const $div = $(this.parentNode);
+    const state = $div.attr('state');
+    const botname = $div.attr('botname');
+    const auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+
+    try {
+        if (state === 'connected') {
+            const response = await fetch("/api/app/disconnectBot", {
+                method: "POST",
+                headers: {
+                    "Authorization": auth_token,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    botusername: botname
+                })
+            });
+
+            if (!response.ok) {
+                throw Error();
+            }
+
+            const data = await response.json();
+
+            if (data.status === "ok") {
+                $div.attr('state', 'disconnected');
+                const $img = $div.find('img');
+                $img.attr('src', '/App/connect_bot.svg');
+                return;
+            }
+
+            showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+        } else {
+            const response = await fetch("/api/app/connectBot", {
+                method: "POST",
+                headers: {
+                    "Authorization": auth_token,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    botusername: botname
+                })
+            });
+
+            if (!response.ok) {
+                throw Error();
+            }
+
+            const data = await response.json();
+
+            if (data.status === "ok") {
+                $div.attr('state', 'connected');
+                const $img = $div.find('img');
+                $img.attr('src', '/App/disconnect_bot.svg');
+                return;
+            }
+
+            showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+        }
+    } catch (error) {
+        showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+    }
+}
+
+function connectAllBots() {
+    var auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+    showNotification("Подключение всех ботов... Пожалуйста не перезагружайте страницу.");
+    fetch("/api/app/connectAllBots", {
+        method: "POST",
+        headers: {
+            "Authorization": auth_token
+        }
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw Error();
+            }
+            return response.json();
+        })
+        .then(data => {
+            avalibleMasClick = true;
+
+            if (data.status === "ok") {
+                var $botsContainer = $('#bots');
+                $botsContainer.find('img').attr('src', '/App/disconnect_bot.svg');
+                fetch("/api/app/getBots", {
+                    method: "GET",
+                    headers: {
+                        "Authorization": auth_token
+                    }
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        } else {
+                            throw new Error();
+                        }
+                    })
+                    .then(data => {
+                        Object.keys(data).forEach(function (key) {
+                            let value = data[key];
+                            $div = $botsContainer.find('div[botname="' + key + '"]');
+                            $div.attr('state', (value ? 'connected' : 'disconnected'));
+                            $img = $div.find('img');
+                            $img.attr({
+                                src: value ? '/App/disconnect_bot.svg' : '/App/connect_bot.svg',
+                                alt: ''
+                            });
+                        });
+                    })
+                    .catch(error => {
+                        // Обработка ошибки
+                    });
+
+                showNotification("Все боты успешно подключены.");
+                return;
+            }
+            showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+        })
+        .catch(error => {
+            showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+        });
+}
+
+function disconnectAllBots() {
+    var auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+    showNotification("Отключение всех ботов... Пожалуйста не перезагружайте страницу.");
+
+    fetch("/api/app/disconnectAllBots", {
+        method: "POST",
+        headers: {
+            "Authorization": auth_token
+        }
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw Error();
+            }
+            return response.json();
+        })
+        .then(data => {
+            avalibleMasClick = true;
+
+            if (data.status === "ok") {
+                var $botsContainer = $('#bots');
+                $botsContainer.find('div[botname]').attr('state', 'disconnected');
+                $botsContainer.find('img').attr('src', '/App/connect_bot.svg');
+                showNotification("Все боты успешно отключены.");
+                return;
+            }
+            showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+        })
+        .catch(error => {
+            showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
         });
 }
 
@@ -264,12 +551,27 @@ $(document).ready(function () {
         var auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
         try {
             if (text !== streamerUsername) {
+                var $botsContainer = $('#bots');
+                var isConnected = $botsContainer.find('div[state="connected"]').length > 0;
+                if (isConnected) {
+                    showNotification("Отключение всех ботов... Пожалуйста не перезагружайте страницу.");
+                }
+                $(this).prop("disabled", true);
                 await fetch('api/app/updateStreamerUsername?username=' + text, {
                     method: 'PUT',
                     headers: {
                         'Authorization': auth_token,
                     }
                 });
+                $(this).prop("disabled", false);
+
+                if (isConnected) {
+                    showNotification("Все боты успешно отключены.");
+
+                    $botsContainer.find('div[botname]').attr('state', 'disconnected');
+                    $botsContainer.find('img').attr('src', '/App/connect_bot.svg');
+                }
+
                 $('#status-streamerusername').text(text);
                 streamerUsername = text;
                 onlineStreamerCheck();
@@ -284,8 +586,9 @@ $(document).ready(function () {
         }
     });
     $('.streamer-username-container > input').on('keypress', function (e) {
-        if (e.which === 13) {
-            $(this).siblings('button').click();
+        var $button = $(this).siblings('button');
+        if (e.which === 13 && !$button.attr('disabled')) {
+            $button.click();
         }
     });
     $masSelectedOption.on('click', function (e) {
@@ -297,10 +600,32 @@ $(document).ready(function () {
             toggleMass();
         }
     });
+    $('#mas-connect').on('click', function () {
+        toggleMass();
 
+        if (!avalibleMasClick || $('#bots div[state="disconnected"]').length == 0) {
+            return;
+        }
+        avalibleMasClick = false;
+        connectAllBots();
+    });
+    $('#mas-disconnect').on('click', function () {
+        toggleMass();
 
+        if (!avalibleMasClick || $('#bots div[state="connected"]').length == 0) {
+            return;
+        }
+        avalibleMasClick = false;
+        disconnectAllBots();
+    });
+
+    pingPong();
     onlineStreamerCheck();
     setInterval(onlineStreamerCheck, 10000);
+    setInterval(pingPong, 10000);
     manualButton.click();
     getBots();
+    $('#next-btn').on('click', nextBtn);
+    $('#prev-btn').on('click', prevBtn);
+    $('#random-btn').on('click', randomBtn);
 });

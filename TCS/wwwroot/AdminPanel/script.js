@@ -97,7 +97,7 @@ function getLogs() {
             return response.json();
         })
         .then(logs => {
-            var logsContainer = $("#logs > div.list.list-logs");
+            var logsContainer = $("#logs > div > div.list.list-logs");
             logsContainer.empty();
 
             logs.forEach(log => {
@@ -280,7 +280,7 @@ async function editUserEditable(selector, property) {
     var input = $(selector);
     var img = input.siblings('button').find('img');
 
-    if (input.attr('contenteditable') === 'true') {
+    if (input.attr('contenteditable') === 'plaintext-only') {
         var value = input.text();
         if (!await sendEditUserRequest(property, value)) {
             return false;

@@ -1,28 +1,12 @@
 ﻿using Npgsql;
 using NpgsqlTypes;
 using System.Data;
-using System.Net;
 using System.Text;
 using TCS.Controllers;
 using static TCS.ProxyCheck;
 
 namespace TCS
 {
-    public struct User
-    {
-        public int Id { get; set; }
-        public string Username { get; set; }
-        public bool Admin { get; set; }
-        public string Password { get; set; }
-        public string Email { get; set; }
-    }
-    public struct UserConfig
-    {
-        public int Id { get; set; }
-        public Dictionary<string, string> Tokens { get; set; }
-        public WebProxy[] Proxies { get; set; }
-        public string StreamerUsername { get; set; }
-    }
     public class Database
     {
         private static string connectionString;
@@ -153,9 +137,9 @@ namespace TCS
                     cmd.CommandText = commandText;
                     await cmd.ExecuteNonQueryAsync();
                 }
-                timer = new Timer(AutoCleanerSessions, null, 0, 3600000);
-
             }
+            timer = new Timer(AutoCleanerSessions, null, 0, 3600000);
+
         }
         internal class SharedArea
         {
@@ -351,7 +335,6 @@ namespace TCS
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex);
                     isValid = false;
                 }
                 return isValid;
@@ -621,7 +604,7 @@ namespace TCS
                     cmd.CommandText = "SELECT value FROM configuration, jsonb_each(tokens) WHERE id = @id;";
                     cmd.Parameters.AddWithValue("@id", id);
                     await using var reader = await cmd.ExecuteReaderAsync();
-                    bots = reader.Cast<IDataRecord>().Select(x => x.GetString(0)).ToList();
+                    bots = reader.Cast<IDataRecord>().Select(x => x.GetString(0).Trim('"')).ToList();
                 }
                 return bots;
             }
@@ -666,6 +649,86 @@ namespace TCS
                 return username;
             }
 
+        }
+        internal class ManageBotsArea
+        {
+            public static async Task<string> GetBotToken(int id, string botname)
+            {
+                string token = null;
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+                await using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText =
+                        """
+                        SELECT key
+                        FROM configuration
+                        CROSS JOIN LATERAL jsonb_object_keys(tokens) AS key
+                        WHERE id = @id AND tokens->>key = @botname LIMIT 1;
+                        """;
+                    cmd.Parameters.AddWithValue("@id", id);
+                    cmd.Parameters.AddWithValue("@botname", botname);
+                    await using var reader = await cmd.ExecuteReaderAsync();
+                    await reader.ReadAsync();
+                    token = reader.GetString(0);
+                }
+                return token;
+            }
+            public static async Task<Dictionary<string, string>> GetBots(int id)
+            {
+                Dictionary<string, string> bots;
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+                await using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT tokens FROM configuration WHERE id = @id LIMIT 1;";
+                    cmd.Parameters.AddWithValue("@id", id);
+                    await using var reader = await cmd.ExecuteReaderAsync();
+                    await reader.ReadAsync();
+                    bots = reader.GetFieldValue<Dictionary<string, string>>("tokens");
+                }
+                return bots;
+            }
+            public static async Task<ProxyCheck.Proxy> GetProxy(int id)
+            {
+                Proxy proxy;
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+                await using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText =
+                        """
+                        SELECT subquery.elem
+                        FROM configuration
+                        CROSS JOIN LATERAL (
+                          SELECT jsonb_array_elements(proxies) AS elem
+                          FROM configuration WHERE id = @id
+                        ) AS subquery
+                        ORDER BY random()
+                        LIMIT 1;
+                        """;
+                    cmd.Parameters.AddWithValue("@id", id);
+                    await using var reader = await cmd.ExecuteReaderAsync();
+                    await reader.ReadAsync();
+                    proxy = reader.GetFieldValue<ProxyCheck.Proxy>(0);
+                }
+                return proxy;
+            }
+            public static async Task<Proxy[]> GetProxies(int id)
+            {
+                Proxy[] proxies;
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+                await using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT proxies FROM configuration WHERE id = @id LIMIT 1;";
+                    cmd.Parameters.AddWithValue("@id", id);
+                    await using var reader = await cmd.ExecuteReaderAsync();
+                    await reader.ReadAsync();
+                    proxies = reader.GetFieldValue<Proxy[]>(0);
+                }
+                return proxies;
+            }
         }
     }
 }

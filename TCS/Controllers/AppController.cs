@@ -9,8 +9,6 @@ namespace TCS.Controllers
         public async Task<IActionResult> LoadPartialView(string partialViewName)
         {
             var auth_token = Request.Headers.Authorization.ToString();
-            Console.WriteLine(auth_token);
-            Console.WriteLine(await Database.AuthArea.IsValidAuthToken(auth_token));
             if (auth_token is not null && await Database.AuthArea.IsValidAuthToken(auth_token))
             {
                 return PartialView(partialViewName);

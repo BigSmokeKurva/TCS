@@ -21,14 +21,21 @@ namespace TCS
             {
                 public int Threads { get; set; }
             }
+            public class AppJson
+            {
+                public int ConnectThreads { get; set; }
+                public int DisconnectThreads { get; set; }
+            }
             public DatabaseJson Database { get; set; }
             public RootAccountJson RootAccount { get; set; }
             public TokenCheckJson TokenCheck { get; set; }
+            public AppJson App { get; set; }
         }
 
         public static ConfigurationJson.DatabaseJson Database { get; set; }
         public static ConfigurationJson.RootAccountJson RootAccount { get; set; }
         public static ConfigurationJson.TokenCheckJson TokenCheck { get; set; }
+        public static ConfigurationJson.AppJson App { get; set; }
         public static string PageTitle = "TCS";
         internal static void Init()
         {
@@ -36,6 +43,8 @@ namespace TCS
             Database = config.Database;
             RootAccount = config.RootAccount;
             TokenCheck = config.TokenCheck;
+            App = config.App;
+
         }
     }
 }

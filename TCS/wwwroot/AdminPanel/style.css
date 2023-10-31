@@ -11,18 +11,28 @@
 body {
     background-color: rgb(33, 33, 38);
     font-family: Inter-Regular;
-    margin: 30px 200px 0px 200px;
     white-space: nowrap;
     -webkit-tap-highlight-color: transparent;
     -moz-tap-highlight-color: transparent;
-    /*-webkit-user-select: none;*/ /* Запрет выделения текста в Safari */
-    /*user-select: none;*/ /* Запрет выделения текста в большинстве браузеров */
+    margin: 30px 200px;
 }
+
+main {
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+}
+
 
 #main_grid {
     display: grid;
     grid-template-columns: 1fr auto;
-    grid-template-rows: auto auto;
+    grid-template-rows: auto auto 1fr;
+    width: 100%;
+    height: 100%;
 }
 
 #title {
@@ -53,13 +63,13 @@ body {
 }
 
 .admin-button {
-    background-color: rgb(118,104,203); /* Фиолетовый цвет */
-    color: rgb(255, 255, 255); /* Белый цвет текста */
+    background-color: rgb(118,104,203);
+    color: rgb(255, 255, 255);
     border: none;
-    border-radius: 4px; /* Округление углов */
+    border-radius: 4px;
     display: flex;
-    text-decoration: none; /* Убираем стандартное подчеркивание ссылки */
-    height: 44px; /* Высота 44 пикселя */
+    text-decoration: none;
+    height: 44px;
     padding: 0 29px;
     justify-content: center;
     align-items: center;
@@ -81,7 +91,6 @@ body {
     align-items: center;
     position: relative;
     margin-top: 23px;
-    grid-column: span 2;
 }
 
 .button {
@@ -116,12 +125,6 @@ body {
     align-items: center;
 }
 
-/*    .background_underline > div {
-        width: 100%;
-        background-color: rgb(64, 66, 70);
-        height: 2px;
-    }
-*/
 .logs_title {
     margin: 26px 0 0 0;
 }
@@ -134,12 +137,19 @@ body {
     display: grid;
     grid-template-columns: auto 1fr;
     grid-column: span 2;
-    margin-top: 20px;
     grid-column-gap: 40px;
+    overflow: hidden;
 }
+
+    .grid-container > div:nth-child(1) {
+        overflow: hidden;
+        display: grid;
+        grid-template-rows: auto 1fr;
+    }
 
 #list-container {
     width: 339px;
+    overflow: hidden;
 }
 
 .search {
@@ -147,7 +157,7 @@ body {
     justify-content: center;
     align-items: center;
     height: 36px;
-    margin-bottom: 20px;
+    margin: 20px 0;
 }
 
     .search input[type="text"] {
@@ -156,8 +166,8 @@ body {
         border: 1px solid transparent;
         background-color: rgb(63, 66, 70);
         font-size: 18px;
-        padding: 10px; /* Подходящий внутренний отступ для поля ввода */
-        color: white; /* Цвет текста */
+        padding: 10px;
+        color: white;
         outline: none;
         height: 36px;
         font-family: Inter-SemiBold;
@@ -166,14 +176,10 @@ body {
 
 
 .list {
-    /*max-height: 156px;*/
-    height: 75vh;
-    /*display: flex;*/
-    /*height: 100%;*/
-    /*    flex-direction: column;
-*/ overflow-y: auto;
-    scrollbar-width: thin; /* Для Firefox */
-    scrollbar-color: rgb(174, 160, 248) rgb(46, 47, 51); /* Для Firefox */
+    height: 100%;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgb(174, 160, 248) rgb(46, 47, 51);
 }
 
     .list::-webkit-scrollbar {
@@ -213,22 +219,28 @@ body {
             background-color: rgb(46,45,50);
         }
 
+#info-grid {
+    display: grid;
+    grid-template-rows: auto auto auto 1fr;
+    height: 100%;
+    overflow: hidden;
+}
 
 #info-panel {
     height: 167px;
     background-color: rgb(45,45,50);
     border-radius: 6px;
     display: grid;
-    /*grid-template-columns: minmax(320px, 2fr) auto 1fr;*/
     grid-template-rows: 1fr 0.5fr 1fr;
     grid-column-gap: 10px;
     grid-auto-flow: column;
     padding: 0 33px;
+    margin-top:20px;
 }
 
 .info-row {
     display: flex;
-    align-items: center; /* Вертикальное выравнивание по центру */
+    align-items: center;
     text-align: left;
     color: rgb(192, 192, 194);
     font-size: 18px;
@@ -327,7 +339,6 @@ body {
         background-color: rgb(133,118,226);
     }
 
-/* Стили для кастомного выпадающего списка */
 .custom-select {
     position: relative;
     width: 140px;
@@ -337,8 +348,7 @@ body {
 }
 
 .selected-option {
-    /*padding: 5px;*/
-    background-color: rgb(63, 66, 70); /* Фоновый цвет */
+    background-color: rgb(63, 66, 70);
     cursor: pointer;
     height: 36px;
     border-radius: 4px;
@@ -348,15 +358,15 @@ body {
 
     .selected-option > span {
         display: flex;
-        justify-content: center; /* Центрирование по вертикали */
-        align-items: center; /* Центрирование по горизонтали */
-        color: white; /* Цвет текста */
+        justify-content: center;
+        align-items: center;
+        color: white;
         font-size: 18px;
     }
 
     .selected-option > div {
         display: flex;
-        justify-content: center; /* Центрирование по вертикали */
+        justify-content: center;
         margin-right: 10px;
     }
 
@@ -380,15 +390,15 @@ body {
     padding: 0;
     display: none;
     position: absolute;
-    background-color: rgb(63, 66, 70); /* Фоновый цвет опций */
-    color: white; /* Цвет текста опций */
+    background-color: rgb(63, 66, 70);
+    color: white;
     border: none;
-    border-top: 1px solid rgb(45,45,50); /* Граница сверху */
+    border-top: 1px solid rgb(45,45,50);
     overflow-y: auto;
     max-height: 200px;
     overflow-x: hidden;
-    scrollbar-width: thin; /* Для Firefox */
-    scrollbar-color: rgb(174, 160, 248) rgb(46, 47, 51); /* Для Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: rgb(174, 160, 248) rgb(46, 47, 51);
     width: 140px;
     border-radius: 0 0 4px 4px;
 }
@@ -413,8 +423,8 @@ body {
         height: 31px;
         display: flex;
         flex-direction: column;
-        justify-content: center; /* Центрирование по вертикали */
-        align-items: center; /* Центрирование по горизонтали */
+        justify-content: center;
+        align-items: center;
         transition: background-color 0.1s
     }
 
@@ -427,15 +437,6 @@ body {
             color: white;
         }
 
-.list-logs {
-    height: 43.6vh;
-    /*padding-left:12px;*/
-    /*    overflow-x: visible;
-
-    position: relative;
-*/
-}
-
 
 #logs-title {
     font-size: 18px;
@@ -443,9 +444,9 @@ body {
     font-family: Inter-SemiBold;
     display: grid;
     grid-template-columns: auto 1fr;
-    /*border-bottom: 1px solid rgb(63,66,70);*/
     padding-bottom: 6px;
     margin-left: 20px;
+    margin-top: 20px;
 }
 
     #logs-title > span:nth-child(2) {
@@ -454,14 +455,20 @@ body {
     }
 
 #logs {
-    margin-top: 20px;
-    /*margin-left: -12px;*/
+    display: grid;
+    grid-template-rows: auto auto 1fr;
+    overflow: hidden;
+    height: 100%;
 }
+
+    #logs > div:nth-child(3) {
+        overflow: hidden;
+        height: 100%;
+    }
 
 .logs_underline {
     background-color: rgb(64, 66, 70);
     height: 1px;
-    /*margin-left: -20px;*/
     margin-right: 20px;
 }
 
@@ -491,32 +498,29 @@ body {
     line-height: 42px;
     border-radius: 5px;
     opacity: 0;
-    transition: bottom 0.5s, opacity 0.5s; /* Добавлена анимация opacity */
+    transition: bottom 0.5s, opacity 0.5s;
     font-family: Inter-SemiBold;
     color: rgb(192,192,194);
     margin-bottom: 20px;
 }
 
     .notification.show {
-        opacity: 1; /* Установка opacity на 1, чтобы показать уведомление */
+        opacity: 1;
     }
 
     .notification.hide {
-        opacity: 0; /* Установка opacity на 0, чтобы скрыть уведомление */
+        opacity: 0;
     }
 
 .notification-content {
     display: flex;
     align-items: center;
-    /*padding: 10px;*/
     padding: 0 10px;
-    /*width: auto;*/
-    /*min-width: 250px;*/
     white-space: nowrap;
 }
 
 .notification img {
-    width: 30px; /* Размер изображения */
+    width: 30px;
     height: 27px;
-    margin-right: 10px; /* Отступ между изображением и текстом */
+    margin-right: 10px;
 }

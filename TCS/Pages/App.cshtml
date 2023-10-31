@@ -17,80 +17,94 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
-    <div id="main_grid">
-        <span id="title">ChatWizzard</span>
-        <div class="user-panel">
-            @if (isAdmin)
-            {
-                <a class="admin-button" href="/AdminPanel">Панель администратора</a>
-            }
-            <div id="username">
-                <span>@username</span>
-            </div>
-            <button id="exit-button">ВЫЙТИ</button>
-        </div>
-        <div class="streamer-username-container">
-            <input type="text" placeholder="ник стримера" value="@streamerUsername" disabled />
-            <button>
-                <img src="~/App/edit.svg" alt="Редактировать" />
-            </button>
-        </div>
-        <div class="status">
-            Канал: <span id="status-streamerusername">@(string.IsNullOrEmpty(streamerUsername) ? "не указан" : streamerUsername)</span>Статус: <span id="status-streameronline"></span>
-            <br />
-            Всего ботов доступно: <span>@count_tokens</span>
-        </div>
-        <div class="menu">
-            <div class="button-container">
-                <button class="button" id="spam-btn">Спам</button>
-                <button class="button" id="binds-btn">Бинды</button>
-                <button class="button" id="manual-btn">Ручная отправка</button>
-                <div class="background_underline underline">
-                    <div></div>
+    <main>
+        <div id="main_grid">
+            <span id="title">ChatWizzard</span>
+            <div class="user-panel">
+                @if (isAdmin)
+                {
+                    <a class="admin-button" href="/AdminPanel">Панель администратора</a>
+                }
+                <div id="username">
+                    <span>@username</span>
                 </div>
-                <div class="underline" id="underline"></div>
+                <button id="exit-button">ВЫЙТИ</button>
             </div>
-        </div>
-        <div id="content-container">
-            <div id="bots-list">
-                <span>Ник бота</span>
-                <div class="custom-select" id="func-select">
-                    <div class="selected-option">
-                        <span>Массовое</span>
-                        <div>
-                            <img class="triangle-close" src="~/App/triangle.svg" alt="" />
-                        </div>
+            <div class="streamer-username-container">
+                <input type="text" placeholder="ник стримера" value="@streamerUsername" disabled />
+                <button>
+                    <img src="~/App/edit.svg" alt="Редактировать" />
+                </button>
+            </div>
+            <div class="status">
+                Канал: <span id="status-streamerusername">@(string.IsNullOrEmpty(streamerUsername) ? "не указан" : streamerUsername)</span>
+                <br/>
+                Статус: <span id="status-streameronline"></span>
+                <br />
+                Всего ботов доступно: <span>@count_tokens</span>
+            </div>
+            <div class="menu">
+                <div class="button-container">
+                    <button class="button" id="spam-btn">Спам</button>
+                    <button class="button" id="binds-btn">Бинды</button>
+                    <button class="button" id="manual-btn">Ручная отправка</button>
+                    <div class="background_underline underline">
+                        <div></div>
                     </div>
-                    <ul class="options" id="func-list">
-                        <li>подключить</li>
-                        <li>отключить</li>
-                    </ul>
+                    <div class="underline" id="underline"></div>
                 </div>
-                <div class="background_line"></div>
-                <div id="list-container">
-                    <div class="list" id="bots"></div>
+            </div>
+            <div id="content-container">
+                <div id="bots-list">
+                    <span>Ник бота</span>
+                    <div class="custom-select" id="func-select">
+                        <div class="selected-option">
+                            <span>Массовое</span>
+                            <div>
+                                <img class="triangle-close" src="~/App/triangle.svg" alt="" />
+                            </div>
+                        </div>
+                        <ul class="options" id="func-list">
+                            <li id="mas-connect">подключить</li>
+                            <li id="mas-disconnect">отключить</li>
+                        </ul>
+                    </div>
+                    <div class="background_line"></div>
+                    <div id="list-container">
+                        <div class="list" id="bots"></div>
+                    </div>
+                    <div id="player-container">
+                        <button id="prev-btn">
+                            <img src="~/App/back.svg" alt="Назад" />
+                        </button>
+                        <button id="random-btn">
+                            <img src="~/App/random.svg" alt="Случайный" />
+                        </button>
+                        <button id="next-btn">
+                            <img src="~/App/next.svg" alt="Следующий" />
+                        </button>
+                    </div>
+                </div>
+                <div id="content"></div>
+                <div id="stream-content">
+                    <iframe src="https://player.twitch.tv/?channel=@(string.IsNullOrEmpty(streamerUsername) ? "-" : streamerUsername)&parent=localhost"
+                            height="100%"
+                            width="100%"
+                            frameborder="0"
+                            scrolling="no">
+                    </iframe>
+                    <iframe src="https://www.twitch.tv/embed/@(string.IsNullOrEmpty(streamerUsername) ? "-" : streamerUsername)/chat?darkpopout&parent=localhost"
+                            height="100%"
+                            width="100%"
+                            frameborder="0"
+                            sandbox="allow-scripts allow-same-origin">
+                    </iframe>
                 </div>
 
-            </div>
-            <div id="content"></div>
-            <div id="stream-content">
-                <iframe src="https://player.twitch.tv/?channel=@(string.IsNullOrEmpty(streamerUsername) ? "-" : streamerUsername)&parent=localhost"
-                        height="100%"
-                        width="100%"
-                        frameborder="0"
-                        scrolling="no">
-                </iframe>
-                <iframe src="https://www.twitch.tv/embed/@(string.IsNullOrEmpty(streamerUsername) ? "-" : streamerUsername)/chat?darkpopout&parent=localhost"
-                        height="100%"
-                        width="100%"
-                        frameborder="0"
-                        sandbox="allow-scripts allow-same-origin">
-                </iframe>
             </div>
 
         </div>
-
-    </div>
+    </main>
     <div class="notification-container" id="notification-container"></div>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="~/App/script.js"></script>
