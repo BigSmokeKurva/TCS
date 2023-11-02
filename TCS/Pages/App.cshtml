@@ -8,6 +8,8 @@
     var count_tokens = await Database.AppArea.GetCountTokens(id);
     var streamerUsername = await Database.AppArea.GetStreamerUsername(id);
     var isAdmin = await Database.SharedArea.IsAdmin(id);
+    var bots = await Database.AppArea.GetBotsNicks(id);
+    var botsData = bots.ToDictionary(x => x, x => BotsManager.IsConnected(id, x));
 }
 
 <html>
@@ -38,7 +40,7 @@
             </div>
             <div class="status">
                 Канал: <span id="status-streamerusername">@(string.IsNullOrEmpty(streamerUsername) ? "не указан" : streamerUsername)</span>
-                <br/>
+                <br />
                 Статус: <span id="status-streameronline"></span>
                 <br />
                 Всего ботов доступно: <span>@count_tokens</span>
@@ -71,7 +73,17 @@
                     </div>
                     <div class="background_line"></div>
                     <div id="list-container">
-                        <div class="list" id="bots"></div>
+                        <div class="list" id="bots">
+                            @foreach (var bot in botsData)
+                            {
+                                <div class="item" botname="@bot.Key" state="@(bot.Value ? "connected" : "disconnected")">
+                                    <span>@bot.Key</span>
+                                    <button>
+                                        <img src="@(bot.Value ? "/App/disconnect_bot.svg" : "/App/connect_bot.svg")" alt="">
+                                    </button>
+                                </div>
+                            }
+                        </div>
                     </div>
                     <div id="player-container">
                         <button id="prev-btn">

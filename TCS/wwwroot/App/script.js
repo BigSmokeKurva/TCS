@@ -248,67 +248,67 @@ function toggleMass() {
     $masSelectedOption.find('div > img').toggleClass('triangle-open triangle-close');
 }
 
-function getBots() {
-    var auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+//function getBots() {
+//    var auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
 
-    fetch("/api/app/getBots", {
-        method: "GET",
-        headers: {
-            "Authorization": auth_token
-        }
-    })
-        .then(response => {
-            if (response.ok) {
-                return response.json();
-            } else {
-                throw new Error();
-            }
-        })
-        .then(data => {
-            var $botsContainer = $('#bots');
-            $botsContainer.empty(); // Очистка содержимого перед добавлением новых данных
+//    fetch("/api/app/getBots", {
+//        method: "GET",
+//        headers: {
+//            "Authorization": auth_token
+//        }
+//    })
+//        .then(response => {
+//            if (response.ok) {
+//                return response.json();
+//            } else {
+//                throw new Error();
+//            }
+//        })
+//        .then(data => {
+//            var $botsContainer = $('#bots');
+//            $botsContainer.empty(); // Очистка содержимого перед добавлением новых данных
 
-            Object.keys(data).forEach(function (key) {
-                let value = data[key];
-                var $div = $('<div>', {
-                    'class': 'item',
-                    'botname': key,
-                    'state': value ? 'connected' : 'disconnected'
-                });
-                var $span = $('<span>').text(key);
-                var $button = $('<button>');
-                var $img = $('<img>').attr({
-                    src: value ? '/App/disconnect_bot.svg' : '/App/connect_bot.svg',
-                    alt: ''
-                });
-                $button.on('click', toggleBot);
-                $div.on('click', function () {
-                    $('#bots-list div[botname]').removeClass('selected-item');
-                    $(this).addClass('selected-item');
-                    history.push($(this).attr('botname'));
-                    if (history.length > 10) {
-                        history.shift();
-                        historyIndex = 9;
-                    }
-                    else if (history.length == 1) {
-                        historyIndex = 0;
-                    }
-                    else {
-                        historyIndex++;
-                    }
-                });
+//            Object.keys(data).forEach(function (key) {
+//                let value = data[key];
+//                var $div = $('<div>', {
+//                    'class': 'item',
+//                    'botname': key,
+//                    'state': value ? 'connected' : 'disconnected'
+//                });
+//                var $span = $('<span>').text(key);
+//                var $button = $('<button>');
+//                var $img = $('<img>').attr({
+//                    src: value ? '/App/disconnect_bot.svg' : '/App/connect_bot.svg',
+//                    alt: ''
+//                });
+//                $button.on('click', toggleBot);
+//                $div.on('click', function () {
+//                    $('#bots-list div[botname]').removeClass('selected-item');
+//                    $(this).addClass('selected-item');
+//                    history.push($(this).attr('botname'));
+//                    if (history.length > 10) {
+//                        history.shift();
+//                        historyIndex = 9;
+//                    }
+//                    else if (history.length == 1) {
+//                        historyIndex = 0;
+//                    }
+//                    else {
+//                        historyIndex++;
+//                    }
+//                });
 
-                $button.append($img);
-                $div.append($span, $button);
-                $botsContainer.append($div);
-            });
-            $('#bots .item').first().click();
+//                $button.append($img);
+//                $div.append($span, $button);
+//                $botsContainer.append($div);
+//            });
+//            $('#bots .item').first().click();
 
-        })
-        .catch(error => {
-            // Обработка ошибки
-        });
-}
+//        })
+//        .catch(error => {
+//            // Обработка ошибки
+//        });
+//}
 
 function pingPong() {
     var auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
@@ -567,7 +567,11 @@ $(document).ready(function () {
 
                 if (isConnected) {
                     showNotification("Все боты успешно отключены.");
-
+                    var spam_btn = $('#s_start-stop');
+                    if (spam_btn) {
+                        spam_btn.attr('state', 'stopped');
+                        spam_btn.text('Начать');
+                    }
                     $botsContainer.find('div[botname]').attr('state', 'disconnected');
                     $botsContainer.find('img').attr('src', '/App/connect_bot.svg');
                 }
@@ -623,8 +627,29 @@ $(document).ready(function () {
     onlineStreamerCheck();
     setInterval(onlineStreamerCheck, 10000);
     setInterval(pingPong, 10000);
-    manualButton.click();
-    getBots();
+    spamButton.click();
+    //getBots();
+    let items = $('#bots-list #bots div[botname]');
+    items.on('click', function () {
+        var thisBot = $(this);
+        $('#bots-list div[botname]').removeClass('selected-item');
+        thisBot.addClass('selected-item');
+        history.push(thisBot.attr('botname'));
+        if (history.length > 10) {
+            history.shift();
+            historyIndex = 9;
+        }
+        else if (history.length == 1) {
+            historyIndex = 0;
+        }
+        else {
+            historyIndex++;
+        }
+    });
+    items.find('button').on('click', toggleBot);
+    items.first().click();
+
+
     $('#next-btn').on('click', nextBtn);
     $('#prev-btn').on('click', prevBtn);
     $('#random-btn').on('click', randomBtn);

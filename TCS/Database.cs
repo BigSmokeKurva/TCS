@@ -26,34 +26,45 @@ namespace TCS
             string[] tables =
             {
                 // users
-                "create table if not exists users (" +
-                "id serial primary key," +
-                "username varchar(50)," +
-                "password varchar(50)," +
-                "email varchar(50)," +
-                "admin bool default false," +
-                "unique(email, username)" +
-                ");",
+                """
+                create table if not exists users (
+                    id serial primary key,
+                    username varchar(50),
+                    password varchar(50),
+                    email varchar(50),
+                    admin bool default false,
+                    unique(email, username)
+                );
+                """,
                 // sessions
-                "create table if not exists sessions (" +
-                "auth_token uuid primary key default gen_random_uuid()," +
-                "id integer," +
-                "expires timestamp," +
-                "unique(auth_token)" +
-                ");",
+                """
+                create table if not exists sessions (
+                    auth_token uuid primary key default gen_random_uuid(),
+                    id integer,
+                    expires timestamp,
+                    unique(auth_token)
+                );
+                """,
                 // logs
-                "create table if not exists logs (" +
-                "id serial," +
-                "message text," +
-                "time timestamp" +
-                ");",
+                """
+                create table if not exists logs (
+                    id serial,
+                    message text,
+                    time timestamp
+                );
+                """,
                 // config
-                "create table if not exists configuration (" +
-                "id serial primary key," +
-                "tokens jsonb default '{}'," +
-                "proxies jsonb default '[]'," +
-                "streamerUsername varchar(50) default ''" +
-                ");",
+                """
+                create table if not exists configuration (
+                    id serial primary key,
+                    tokens jsonb default '{}',
+                    proxies jsonb default '[]',
+                    streamerUsername varchar(50) default '',
+                    spamThreads integer default 1,
+                    spamDelay integer default 1,
+                    spamMessages varchar(50)[] default '{}'
+                );
+                """,
                 // root
                 $"insert into users (username, password, email, admin) values ('root', '{Configuration.RootAccount.Password}', 'root@root.com', true) on conflict(username, email) do update set password = '{Configuration.RootAccount.Password}';",
                 $"insert into configuration (id) values (1) on conflict do nothing;",
@@ -101,7 +112,6 @@ namespace TCS
                     DELETE FROM configuration WHERE id = target_id;
                 END;
                 $$ LANGUAGE plpgsql;
-                
                 """
 
             };
@@ -325,7 +335,6 @@ namespace TCS
                 {
                     await using (var cmd = connection.CreateCommand())
                     {
-                        // TODO
                         cmd.CommandText = "SELECT EXISTS (SELECT 1 FROM sessions WHERE auth_token = @auth_token::uuid) AS exists_token;";
                         cmd.Parameters.AddWithValue("@auth_token", NpgsqlDbType.Uuid, Guid.Parse(auth_token));
                         await using var reader = await cmd.ExecuteReaderAsync();
@@ -374,7 +383,7 @@ namespace TCS
                 {
                     cmd.CommandText = "SELECT id, username, email FROM users WHERE username != 'root';";
                     await using var reader = await cmd.ExecuteReaderAsync();
-                    while (reader.Read())
+                    while (await reader.ReadAsync())
                     {
                         users.Add(new UserShort
                         {
@@ -648,7 +657,42 @@ namespace TCS
                 }
                 return username;
             }
+            internal static async Task<AppApiController.SpamConfigurationModel> GetSpamConfiguration(int id)
+            {
+                AppApiController.SpamConfigurationModel spamConfiguration;
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+                await using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT spamThreads, spamDelay, spamMessages FROM configuration WHERE id = @id LIMIT 1;";
+                    cmd.Parameters.AddWithValue("@id", id);
+                    await using var reader = await cmd.ExecuteReaderAsync();
+                    await reader.ReadAsync();
+                    spamConfiguration = new AppApiController.SpamConfigurationModel
+                    {
+                        Threads = reader.GetInt32(0),
+                        Delay = reader.GetInt32(1),
+                        Messages = reader.GetFieldValue<string[]>(2)
+                    };
+                }
+                return spamConfiguration;
+            }
+            internal static async Task UpdateSpamConfiguration(int id, AppApiController.SpamConfigurationModel configuration)
+            {
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
 
+                await using (var cmd = connection.CreateCommand())
+                {
+                    // обновить данные в базе
+                    cmd.CommandText = "UPDATE configuration SET spamThreads = @spamThreads, spamDelay = @spamDelay, spamMessages = @spamMessages WHERE id = @id;";
+                    cmd.Parameters.AddWithValue("@id", id);
+                    cmd.Parameters.AddWithValue("@spamThreads", configuration.Threads);
+                    cmd.Parameters.AddWithValue("@spamDelay", configuration.Delay);
+                    cmd.Parameters.AddWithValue("@spamMessages", NpgsqlDbType.Array | NpgsqlDbType.Text, configuration.Messages);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
         }
         internal class ManageBotsArea
         {

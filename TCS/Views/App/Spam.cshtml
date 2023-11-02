@@ -1,6 +1,29 @@
-﻿@*
+﻿@using TCS;
+@*
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
 @{
+    var auth_token = Context.Request.Headers.Authorization;
+    var id = await Database.SharedArea.GetId(auth_token);
+    var isSpamStarted = await BotsManager.SpamStarted(id);
+    var spamConfiguration = await Database.AppArea.GetSpamConfiguration(id);
 }
-<p>Spam</p>
+<link rel="stylesheet" href="~/Spam/style.css" />
+<div class="s_container">
+    <textarea class="s_textarea">@string.Join('\n', spamConfiguration.Messages)</textarea>
+    <div id="s_count-bots">
+        Потоки
+        <br />
+        <input type="number" class="s_number-input" max="50" step="1" value="@spamConfiguration.Threads">
+    </div>
+    <div id="s_delay">
+        Задержка в секундах
+        <br />
+        <input type="number" class="s_number-input" max="500" step="1" value="@spamConfiguration.Delay">
+    </div>
+    <div>
+        <button class="send-button" id="s_start-stop" state="@(isSpamStarted ? "started" : "stoped")">@(isSpamStarted ? "Остановить" : "Начать")</button>
+        <button class="send-button" id="s_save">Сохранить</button>
+    </div>
+</div>
+<script src="~/Spam/script.js"></script>

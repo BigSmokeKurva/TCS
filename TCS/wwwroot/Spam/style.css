@@ -1,0 +1,100 @@
+﻿#content {
+    margin: 30px 20px 0 20px;
+}
+.s_container {
+    display:grid;
+    grid-template-rows: 1fr auto auto auto;
+    height:100%;
+}
+
+.s_textarea {
+    outline: none;
+    background: rgb(63,66,70);
+    color: white;
+    height: 100%;
+    padding: 10px;
+    resize: none;
+    border: none;
+    border-radius: 4px;
+    font-size: 18px;
+    scrollbar-width: thin; /* Для Firefox */
+    scrollbar-color: rgb(174, 160, 248) rgb(46, 47, 51); /* Для Firefox */
+}
+    .s_textarea::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .s_textarea::-webkit-scrollbar-thumb {
+        background-color: rgb(118, 104, 203);
+        /*border: 2px solid rgb(46, 47, 51);*/
+        border-radius: 2px;
+    }
+
+    .s_textarea::-webkit-scrollbar-track {
+        background-color: transparent;
+    }
+
+
+.s_number-input {
+    width: 200px;
+    height: 42px;
+    border-radius: 4px;
+    outline: none;
+    background-color: rgb(63,66,70);
+    border: none;
+    color: white;
+    font-size: 18px;
+    text-align: left;
+    padding: 15px;
+}
+
+    .s_number-input::-webkit-inner-spin-button,
+    .s_number-input::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    .s_number-input[type="number"] {
+        -moz-appearance: textfield;
+    }
+
+#s_count-bots {
+    color:white;
+    margin-top: 40px;
+}
+
+#s_delay {
+    color: white;
+    margin-top: 20px;
+}
+input[type="number"]{
+    margin-top:6px;
+}
+
+.send-button {
+    height: 36px;
+    width: 123px;
+    background-color: rgb(118,104,203);
+    color: white;
+    font-size: 18px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: Inter-Regular;
+    margin-top: 30px;
+    margin-right:12px;
+}
+
+@media (max-width: 768px) {
+    .s_container div{
+        justify-self:center;
+    }
+
+    .s_container > div:nth-child(4){
+        margin-bottom:20px;
+    }
+
+    .s_textarea{
+        height:50vh;
+    }
+}

@@ -45,9 +45,10 @@ namespace TCS
                 await connection.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
                 connection.Dispose();
             }
-            public async Task Send(string message)
+            public async Task Send(string message, CancellationToken? ctoken = null)
             {
-                await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"PRIVMSG #{streamerUsername} :{message}")), WebSocketMessageType.Text, true, CancellationToken.None);
+                ctoken ??= CancellationToken.None;
+                await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"PRIVMSG #{streamerUsername} :{message}")), WebSocketMessageType.Text, true, ctoken.Value);
             }
         }
         public class User
@@ -56,6 +57,8 @@ namespace TCS
             private string streamerUsername;
             public Dictionary<string, Bot> bots = new();
             private Task task = null;
+            private List<Task> spamTasks = new();
+            private CancellationTokenSource spamCancellationToken = null;
             private CancellationTokenSource cancellationToken = new();
             private static readonly Random rnd = new();
             public User(int id, string streamerUsername)
@@ -81,17 +84,17 @@ namespace TCS
                 try
                 {
                     await Task.Delay(600000, cancellationToken.Token);
-                    // TODO: remove and disconnect bots
+                    if (SpamStarted())
+                    {
+                        await StopSpam();
+                    }
                     await DisconnectAllBots();
                     users.Remove(id);
                 }
                 catch (TaskCanceledException ex)
                 {
                 }
-                catch (Exception ex)
-                {
-                    //Console.WriteLine(ex);
-                }
+                catch { }
             }
             internal async Task ConnectBot(string botname)
             {
@@ -164,6 +167,68 @@ namespace TCS
                 if (!bots.TryGetValue(botname, out var bot))
                     return;
                 await bot.Send(message);
+            }
+            internal bool SpamStarted()
+            {
+                UpdateTimer();
+                return spamTasks.Any();
+            }
+            internal async Task StopSpam()
+            {
+                spamCancellationToken?.Cancel();
+                // ждем пока все потоки остановятся
+                while (spamTasks.Any(x => x.Status == TaskStatus.Running))
+                {
+                    await Task.Delay(200);
+                }
+                spamCancellationToken?.Dispose();
+                spamTasks.Clear();
+            }
+            internal async Task StartSpam(int threads, int delay, string[] messages)
+            {
+                spamCancellationToken = new();
+                for (int i = 0; i < threads; i++)
+                {
+                    spamTasks.Add(SpamThread(delay, messages));
+                }
+                //await Task.WhenAll(spamTasks);
+
+            }
+            internal async Task SpamThread(int delay, string[] messages)
+            {
+                delay *= 1000;
+                while (!spamCancellationToken.IsCancellationRequested)
+                {
+                    if (!bots.Any())
+                    {
+                        await Task.Delay(delay, spamCancellationToken.Token);
+                    }
+                    try
+                    {
+                        var bot = bots.Values.ElementAt(rnd.Next(0, bots.Count));
+                        await bot.Send(messages[rnd.Next(0, messages.Length)], spamCancellationToken.Token);
+                        await Task.Delay(delay, spamCancellationToken.Token);
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        return;
+                    }
+                    catch { }
+                }
+            }
+            internal async Task ChangeStreamerUsername(string streamerUsername)
+            {
+                UpdateTimer();
+                if (SpamStarted())
+                {
+                    await StopSpam();
+                }
+                if (bots.Any())
+                {
+                    await DisconnectAllBots();
+                }
+                bots.Clear();
+                this.streamerUsername = streamerUsername;
             }
         }
         public static Dictionary<int, User> users = new();
@@ -246,6 +311,50 @@ namespace TCS
 
             await user.Send(botUsername, message);
             return true;
+        }
+        public static async Task<bool> SpamStarted(int id)
+        {
+            if (!users.TryGetValue(id, out var user))
+            {
+                var streamerUsername = await Database.AppArea.GetStreamerUsername(id);
+                users.Add(id, new User(id, streamerUsername));
+                users[id].UpdateTimer();
+                return false;
+            }
+            return user.SpamStarted();
+        }
+        public static async Task StopSpam(int id)
+        {
+            if (!users.TryGetValue(id, out var user))
+            {
+                var streamerUsername = await Database.AppArea.GetStreamerUsername(id);
+                users.Add(id, new User(id, streamerUsername));
+                users[id].UpdateTimer();
+                return;
+            }
+            await user.StopSpam();
+        }
+        public static async Task StartSpam(int id, int threads, int delay, string[] messages)
+        {
+            if (!users.TryGetValue(id, out var user))
+            {
+                var streamerUsername = await Database.AppArea.GetStreamerUsername(id);
+                users.Add(id, new User(id, streamerUsername));
+                user = users[id];
+                user.UpdateTimer();
+                await user.StartSpam(threads, delay, messages);
+                return;
+            }
+            await user.StartSpam(threads, delay, messages);
+        }
+        public static async Task ChangeStreamerUsername(int id, string streamerUsername)
+        {
+            if (!users.TryGetValue(id, out var user))
+            {
+                users.Add(id, new User(id, streamerUsername));
+                return;
+            }
+            await user.ChangeStreamerUsername(streamerUsername);
         }
     }
 }

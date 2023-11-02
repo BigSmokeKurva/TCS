@@ -261,12 +261,10 @@ main {
 }
 
     #content-container #stream-content {
-        /*display: inline-grid;*/
         width: 374px;
-        margin-top: 8px;
         display: flex;
         flex-direction: column;
-        margin: 0 20px;
+        margin: 8px 0 0 0;
     }
 
 #content {
@@ -281,7 +279,7 @@ main {
 #stream-content > iframe:nth-child(2) {
     height: -webkit-fill-available;
     margin-top: -52px;
-    z-index: -1;
+    /*z-index: -1;*/
 }
 
 #bots-list {
@@ -603,6 +601,10 @@ main {
             #content-container #stream-content > iframe:nth-child(2) {
                 height: 100vh;
             }
+
+    .item span{
+        overflow:hidden;
+    }
 
     .notification {
         line-height: 30px;

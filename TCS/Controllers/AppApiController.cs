@@ -19,6 +19,14 @@ namespace TCS.Controllers
             public string Message { get; set; }
         }
 
+        public class SpamConfigurationModel
+        {
+            public int Threads { get; set; }
+            public int Delay { get; set; }
+            public string[] Messages { get; set; }
+        }
+
+
         [HttpPut]
         [Route("updateStreamerUsername")]
         public async Task<ActionResult> UpdateStreamerUsername(string username)
@@ -37,7 +45,7 @@ namespace TCS.Controllers
             await Database.AppArea.UpdateStreamerUsername(id, username);
             try
             {
-                await BotsManager.DisconnectAllBots(id);
+                await BotsManager.ChangeStreamerUsername(id, username);
             }
             catch
             {
@@ -219,6 +227,91 @@ namespace TCS.Controllers
                     message = "Ошибка отправки сообщения."
                 });
             }
+        }
+
+        [HttpPost]
+        [Route("updateSpamConfiguraion")]
+        public async Task<ActionResult> UpdateSpamConfiguration(SpamConfigurationModel model)
+        {
+            var auth_token = Request.Headers.Authorization.ToString();
+            var id = await Database.SharedArea.GetId(auth_token);
+            if (await BotsManager.SpamStarted(id))
+            {
+                await BotsManager.StopSpam(id);
+            }
+            if (model.Delay > 500 || model.Delay < 0)
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "Задержка не может быть больше 500 с."
+                });
+            }
+            if (model.Threads > 50 || model.Threads < 0)
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "Количество потоков не может быть больше 50."
+                });
+            }
+            model.Messages = model.Messages.Select(x => x.Trim()).Where(x => !(string.IsNullOrEmpty(x) || string.IsNullOrWhiteSpace(x))).ToArray();
+            await Database.AppArea.UpdateSpamConfiguration(id, model);
+            return Ok(new
+            {
+                status = "ok"
+            });
+
+        }
+
+        [HttpPost]
+        [Route("startSpam")]
+        public async Task<ActionResult> StartSpam(SpamConfigurationModel model)
+        {
+            var auth_token = Request.Headers.Authorization.ToString();
+            var id = await Database.SharedArea.GetId(auth_token);
+            if (await BotsManager.SpamStarted(id))
+            {
+                await BotsManager.StopSpam(id);
+            }
+            if (model.Delay > 500 || model.Delay < 0)
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "Задержка не может быть больше 500 с."
+                });
+            }
+            if (model.Threads > 50 || model.Threads < 0)
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "Количество потоков не может быть больше 50."
+                });
+            }
+            model.Messages = model.Messages.Select(x => x.Trim()).Where(x => !(string.IsNullOrEmpty(x) || string.IsNullOrWhiteSpace(x))).ToArray();
+            await BotsManager.StartSpam(id, model.Threads, model.Delay, model.Messages);
+            return Ok(new
+            {
+                status = "ok"
+            });
+        }
+
+        [HttpGet]
+        [Route("stopSpam")]
+        public async Task<ActionResult> StopSpam()
+        {
+            var auth_token = Request.Headers.Authorization.ToString();
+            var id = await Database.SharedArea.GetId(auth_token);
+            if (await BotsManager.SpamStarted(id))
+            {
+                await BotsManager.StopSpam(id);
+            }
+            return Ok(new
+            {
+                status = "ok"
+            });
         }
     }
 }
