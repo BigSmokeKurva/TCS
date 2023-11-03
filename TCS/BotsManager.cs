@@ -42,7 +42,11 @@ namespace TCS
             }
             public async Task Disconnect()
             {
-                await connection.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
+                try
+                {
+                    await connection.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
+                }
+                catch { }
                 connection.Dispose();
             }
             public async Task Send(string message, CancellationToken? ctoken = null)
@@ -86,9 +90,14 @@ namespace TCS
                     await Task.Delay(600000, cancellationToken.Token);
                     if (SpamStarted())
                     {
+                        await Database.SharedArea.Log(id, "Остановил спам. (Бездействие)");
                         await StopSpam();
                     }
-                    await DisconnectAllBots();
+                    if (bots.Any())
+                    {
+                        await Database.SharedArea.Log(id, "Отключил всех ботов. (Бездействие)");
+                        await DisconnectAllBots();
+                    }
                     users.Remove(id);
                 }
                 catch (TaskCanceledException ex)

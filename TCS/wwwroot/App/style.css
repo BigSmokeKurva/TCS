@@ -15,7 +15,7 @@ body {
     white-space: nowrap;
     -webkit-tap-highlight-color: transparent;
     -moz-tap-highlight-color: transparent;
-    margin: 30px 200px;
+    margin: 30px 130px;
     /*-webkit-user-select: none;*/ /* Запрет выделения текста в Safari */
     /*user-select: none;*/ /* Запрет выделения текста в большинстве браузеров */
 }
@@ -602,8 +602,9 @@ main {
                 height: 100vh;
             }
 
-    .item span{
-        overflow:hidden;
+    .item span {
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .notification {

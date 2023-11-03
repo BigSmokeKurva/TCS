@@ -1,0 +1,242 @@
+﻿#content {
+    margin: 30px 20px 0 20px;
+    overflow: hidden;
+}
+
+.b_container {
+    display: grid;
+    grid-template-rows: 1fr auto;
+    height: 100%;
+    overflow: hidden;
+}
+
+.b_binds-container {
+    /*height: 100%;*/
+    width: 100%;
+    overflow-y: auto;
+    scrollbar-width: thin; /* Для Firefox */
+    scrollbar-color: rgb(174, 160, 248) rgb(46, 47, 51); /* Для Firefox */
+}
+
+    .b_binds-container::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .b_binds-container::-webkit-scrollbar-thumb {
+        background-color: rgb(118, 104, 203);
+        /*border: 2px solid rgb(46, 47, 51);*/
+        border-radius: 2px;
+    }
+
+    .b_binds-container::-webkit-scrollbar-track {
+        background-color: transparent;
+    }
+
+.b_binds {
+    display: grid;
+    /*flex-wrap: wrap;*/
+    grid-template-columns: repeat(auto-fill, minmax(143px, 1fr));
+    grid-gap: 9px;
+    height: inherit;
+    overflow-y: auto;
+    padding-right: 10px;
+    scrollbar-width: thin; /* Для Firefox */
+    scrollbar-color: rgb(174, 160, 248) rgb(46, 47, 51); /* Для Firefox */
+}
+
+    .b_binds::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .b_binds::-webkit-scrollbar-thumb {
+        background-color: rgb(118, 104, 203);
+        /*border: 2px solid rgb(46, 47, 51);*/
+        border-radius: 2px;
+    }
+
+    .b_binds::-webkit-scrollbar-track {
+        background-color: transparent;
+    }
+
+.b_item {
+    height: 34px;
+    background-color: transparent;
+    border: 2px solid rgb(176,162,252);
+    color: rgb(176,162,252);
+    font-size: 18px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: Inter-Regular;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.b_options_area {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto 1fr;
+    margin-top: 20px;
+    min-height: 260.137px;
+}
+
+.b_custom-select {
+    width: 200px;
+}
+
+.b_selected-option {
+    border: none;
+    background-color: rgb(63, 66, 70);
+}
+
+    .b_selected-option > span {
+        color: rgb(192,192,194);
+        justify-self: left;
+        padding: 0 10px;
+        overflow: hidden;
+        width: -webkit-fill-available;
+        width: -moz-available;
+        text-overflow: ellipsis;
+    }
+
+.b_options {
+    color: rgb(192,192,194);
+    background-color: rgb(45, 45, 50);
+    border: none;
+}
+
+.b_options_area > div > span {
+    color: rgb(192,192,194);
+    font-size: 18px;
+}
+
+.b_options_content {
+    grid-row: span 2;
+    margin-top: 28.74px;
+    margin-left: 20px;
+}
+
+    .b_options_content .b_custom-select {
+        margin: 0;
+    }
+
+    .b_options_content > div {
+        background-color: rgb(45,45,50);
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+        border-radius: 4px;
+    }
+
+        .b_options_content > div > div {
+            display: flex;
+            flex-direction: column;
+            width: fit-content;
+        }
+
+            .b_options_content > div > div > span {
+                color: rgb(192,192,194);
+                font-size: 18px;
+                margin-bottom: 8px;
+            }
+
+    .b_options_content input {
+        width: 200px;
+        height: 34px;
+        font-size: 18px;
+        background-color: rgb(63, 66, 70);
+        border-radius: 4px;
+        border: none;
+        padding: 0 10px;
+        color: rgb(192,192,194);
+        outline: none;
+    }
+
+    .b_options_content button {
+        height: 34px;
+        background-color: transparent;
+        border: 2px solid rgb(176,162,252);
+        color: rgb(176,162,252);
+        font-size: 18px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .b_options_content .b_options {
+        height: 16vh;
+    }
+
+
+.b_button_confirm {
+    margin-top: 10px;
+}
+
+#b_add {
+    /*    height: 254px;
+    width: 240px;*/
+    width: fit-content;
+    height: fit-content;
+}
+
+    #b_add > div > input:nth-child(2) {
+        margin-bottom: 20px;
+    }
+
+#b_edit > div:nth-child(2) {
+    margin-left: 20px;
+}
+
+    #b_edit > div:nth-child(2) > button {
+        margin-top: auto;
+    }
+
+#b_edit_button_select > div {
+    margin-bottom: 20px;
+}
+
+#b_delete {
+    width: fit-content;
+    height: fit-content;
+}
+
+@media (max-width: 768px) {
+    #content {
+        margin-bottom: 20px;
+    }
+
+    .b_binds-container {
+    }
+
+    .b_options_area {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+        margin-top: 0;
+        min-height: 0;
+    }
+
+        .b_options_area > div:nth-child(1) {
+            justify-self: center;
+            margin-top: 20px;
+        }
+
+    .b_options {
+        z-index: 1;
+    }
+
+    .b_options_content {
+        margin: 20px 0 0 0;
+        justify-self: center;
+    }
+
+    #b_edit {
+        flex-direction: column;
+        align-items: center;
+    }
+
+        #b_edit > div:nth-child(2) {
+            margin: 20px 0 0 0;
+        }
+
+            #b_edit > div:nth-child(2) > button {
+                margin-top: 20px;
+            }
+}

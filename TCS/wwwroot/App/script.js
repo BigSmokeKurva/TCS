@@ -603,6 +603,28 @@ $(document).ready(function () {
         if (!$(event.target).is($masSelectedOption) && !$.contains($masOptions[0], event.target) && $masOptions.is(':visible')) {
             toggleMass();
         }
+        try {
+            let $optionSelectedOption = $('#b_option_select> .selected-option');
+            let $optionOptions = $('#b_option_select > .options');
+            if (!$(event.target).is($optionSelectedOption) && !$.contains($optionOptions[0], event.target) && $optionOptions.is(':visible')) {
+                toggleOptionsMenu();
+            }
+        } catch { }
+        try {
+            let $optionSelectedOption = $('#b_edit_button_select > div');
+            let $optionOptions = $('#b_edit_button_select > ul');
+            if (!$(event.target).is($optionSelectedOption) && !$.contains($optionOptions[0], event.target) && $optionOptions.is(':visible')) {
+                toggleEditBindsMenu();
+            }
+        } catch { }
+        try {
+            var $optionSelectedOption = $('#b_delete_button_select > div');
+            var $optionOptions = $('#b_delete_button_select > ul');
+            if (!$(event.target).is($optionSelectedOption) && !$.contains($optionOptions[0], event.target) && $optionOptions.is(':visible')) {
+                toggleDeleteBindsMenu();
+            }
+        } catch { }
+
     });
     $('#mas-connect').on('click', function () {
         toggleMass();
@@ -627,7 +649,7 @@ $(document).ready(function () {
     onlineStreamerCheck();
     setInterval(onlineStreamerCheck, 10000);
     setInterval(pingPong, 10000);
-    spamButton.click();
+    manualButton.click();
     //getBots();
     let items = $('#bots-list #bots div[botname]');
     items.on('click', function () {

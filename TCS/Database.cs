@@ -62,7 +62,8 @@ namespace TCS
                     streamerUsername varchar(50) default '',
                     spamThreads integer default 1,
                     spamDelay integer default 1,
-                    spamMessages varchar(50)[] default '{}'
+                    spamMessages varchar(50)[] default '{}',
+                    binds jsonb default '{}'
                 );
                 """,
                 // root
@@ -110,10 +111,34 @@ namespace TCS
                     DELETE FROM logs WHERE id = target_id;
                     DELETE FROM users WHERE id = target_id;
                     DELETE FROM configuration WHERE id = target_id;
+                    DELETE FROM sessions WHERE id = target_id;
                 END;
                 $$ LANGUAGE plpgsql;
+                """,
                 """
+                CREATE OR REPLACE FUNCTION add_bind(p_id integer, key text, keyPath text[], p_values jsonb) RETURNS bool AS $$
+                DECLARE
+                    existing_keys_count integer;
+                BEGIN
+                    SELECT COUNT(binds->key) INTO existing_keys_count FROM configuration WHERE id = p_id;
 
+                    IF existing_keys_count > 0 THEN
+                        RETURN false;
+                    ELSE
+                        UPDATE configuration
+                        SET binds = jsonb_set(binds, keyPath, p_values, true)
+                        WHERE id = p_id;
+                        RETURN true;
+                    END IF;
+                END $$ LANGUAGE plpgsql;
+                """,
+                """
+                CREATE OR REPLACE FUNCTION edit_bind(p_id integer, old_key text, new_keyPath text[], p_values jsonb) RETURNS void AS $$
+                BEGIN
+                    UPDATE configuration SET binds = binds - old_key WHERE id = p_id;
+                    UPDATE configuration SET binds = jsonb_set(binds, new_keyPath, p_values, true) WHERE id = p_id;
+                END $$ LANGUAGE plpgsql;
+                """,
             };
             await using (var connection = new NpgsqlConnection($"Host={Configuration.Database.Host};Username={Configuration.Database.Username};Password={Configuration.Database.Password};Database=postgres"))
             {
@@ -690,6 +715,122 @@ namespace TCS
                     cmd.Parameters.AddWithValue("@spamThreads", configuration.Threads);
                     cmd.Parameters.AddWithValue("@spamDelay", configuration.Delay);
                     cmd.Parameters.AddWithValue("@spamMessages", NpgsqlDbType.Array | NpgsqlDbType.Text, configuration.Messages);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+            /// <summary>
+            /// True - добавлено, False - уже существует
+            /// </summary>
+            /// <param name="id"></param>
+            /// <param name="model"></param>
+            /// <returns></returns>
+            internal static async Task<bool> AddBind(int id, AppApiController.BindModel model)
+            {
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+                bool result;
+                await using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT * FROM add_bind(@id, @key, @keyPath, @values)";
+                    cmd.Parameters.AddWithValue("@id", id);
+                    cmd.Parameters.AddWithValue("@key", model.Name);
+                    cmd.Parameters.AddWithValue("@keyPath", NpgsqlDbType.Array | NpgsqlDbType.Text, new[] { model.Name });
+                    cmd.Parameters.AddWithValue("@values", NpgsqlDbType.Jsonb, model.Messages);
+                    result = (bool)await cmd.ExecuteScalarAsync();
+                    Console.WriteLine(result);
+                }
+                return result;
+            }
+            internal static async Task<string[]> GetBinds(int id)
+            {
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                string[] binds;
+
+                await using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT jsonb_object_keys(binds) FROM configuration WHERE id = @id;";
+                    cmd.Parameters.AddWithValue("@id", id);
+                    await using var reader = await cmd.ExecuteReaderAsync();
+                    binds = reader.Cast<IDataRecord>().Select(x => x.GetString(0)).ToArray();
+                }
+                return binds;
+            }
+            internal static async Task<string[]> GetBindMessages(int id, string bindKey)
+            {
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                string[] messages;
+
+                await using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT jsonb_array_elements(binds->@key) AS myArray FROM configuration WHERE id = @id;";
+                    cmd.Parameters.AddWithValue("@id", id);
+                    cmd.Parameters.AddWithValue("@key", bindKey);
+                    await using var reader = await cmd.ExecuteReaderAsync();
+                    messages = reader.Cast<IDataRecord>().Select(x => x.GetString(0).Trim('"')).ToArray();
+                }
+                return messages;
+            }
+            internal static async Task<bool> BindExists(int id, string bindKey)
+            {
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                bool exists;
+
+                await using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT EXISTS (SELECT 1 FROM configuration WHERE id = @id AND binds ? @key) AS exists;";
+                    cmd.Parameters.AddWithValue("@id", id);
+                    cmd.Parameters.AddWithValue("@key", bindKey);
+                    await using var reader = await cmd.ExecuteReaderAsync();
+                    await reader.ReadAsync();
+                    exists = reader.GetBoolean(0);
+                }
+                return exists;
+            }
+            internal static async Task ReplaceBind(int id, AppApiController.EditBindModel model)
+            {
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                await using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "UPDATE configuration SET binds = jsonb_set(binds, @keyPath, @values, true) WHERE id = @id;";
+                    cmd.Parameters.AddWithValue("@id", id);
+                    cmd.Parameters.AddWithValue("@keyPath", NpgsqlDbType.Array | NpgsqlDbType.Text, new[] { model.Name });
+                    cmd.Parameters.AddWithValue("@values", NpgsqlDbType.Jsonb, model.Messages);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+            internal static async Task EditBind(int id, AppApiController.EditBindModel model)
+            {
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                await using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT edit_bind(@id, @old_key, @new_keyPath, @values);";
+                    cmd.Parameters.AddWithValue("@id", id);
+                    cmd.Parameters.AddWithValue("@old_key", model.OldName);
+                    cmd.Parameters.AddWithValue("@new_keyPath", NpgsqlDbType.Array | NpgsqlDbType.Text, new[] { model.Name });
+                    cmd.Parameters.AddWithValue("@values", NpgsqlDbType.Jsonb, model.Messages);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+            internal static async Task DeleteBind(int id, string bindKey)
+            {
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                await using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "UPDATE configuration SET binds = binds - @key WHERE id = @id;";
+                    cmd.Parameters.AddWithValue("@id", id);
+                    cmd.Parameters.AddWithValue("@key", bindKey);
                     await cmd.ExecuteNonQueryAsync();
                 }
             }

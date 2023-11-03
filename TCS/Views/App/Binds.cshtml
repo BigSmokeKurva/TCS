@@ -1,7 +1,88 @@
-﻿@*
+﻿@using TCS;
+@*
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
 @{
+    var auth_token = Context.Request.Headers.Authorization;
+    var id = await Database.SharedArea.GetId(auth_token);
+    var binds = await Database.AppArea.GetBinds(id);
 }
 
-<p>Binds</p>
+<link rel="stylesheet" href="~/Binds/style.css" />
+<div class="b_container">
+    <div class="b_binds-container">
+        <div class="b_binds">
+            @foreach (var item in binds)
+            {
+                <button class="b_item">@item</button>
+            }
+        </div>
+    </div>
+    <div class="b_options_area">
+        <div>
+            <span>Настройки</span>
+            <div class="custom-select b_custom-select" id="b_option_select">
+                <div class="selected-option b_selected-option">
+                    <span></span>
+                    <div>
+                        <img class="triangle-close" src="~/AdminPanel/triangle.svg" alt="" />
+                    </div>
+                </div>
+                <ul class="options b_options">
+                    <li id="b_add-btn">Добавить</li>
+                    <li id="b_edit-btn">Редактировать</li>
+                    <li id="b_delete-btn">Удалить</li>
+                </ul>
+            </div>
+
+        </div>
+        <div class="b_options_content">
+            <div id="b_add" style="display: none">
+                <div>
+                    <span>Название кнопки</span>
+                    <input type="text" class="b_input" />
+                    <span>Бинды кнопки</span>
+                    <input type="text" class="b_input" placeholder="1,2,3,4" />
+                    <button class="b_button_confirm">Добавить бинд</button>
+                </div>
+            </div>
+            <div id="b_edit" style="display: none">
+                <div>
+                    <span>Выбор кнопки</span>
+                    <div class="custom-select b_custom-select" id="b_edit_button_select">
+                        <div class="selected-option b_selected-option">
+                            <span></span>
+                            <div>
+                                <img class="triangle-close" src="~/AdminPanel/triangle.svg" alt="" />
+                            </div>
+                        </div>
+                        <ul class="options b_options"></ul>
+                    </div>
+                    <span>Название кнопки</span>
+                    <input type="text" class="b_input" />
+                </div>
+                <div>
+                    <span>Сообщения кнопки</span>
+                    <input type="text" class="b_input" placeholder="1,2,3,4" />
+                    <button class="b_button_confirm">Применить</button>
+                </div>
+            </div>
+            <div id="b_delete" style="display: none">
+                <div>
+                    <span>Выбор кнопки</span>
+                    <div class="custom-select b_custom-select" id="b_delete_button_select">
+                        <div class="selected-option b_selected-option">
+                            <span></span>
+                            <div>
+                                <img class="triangle-close" src="~/AdminPanel/triangle.svg" alt="" />
+                            </div>
+                        </div>
+                        <ul class="options b_options"></ul>
+                    </div>
+                    <button class="b_button_confirm">Удалить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/Binds/script.js"></script>

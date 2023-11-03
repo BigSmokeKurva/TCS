@@ -8,6 +8,7 @@ namespace TCS.Controllers
     [TypeFilter(typeof(UserAuthorizationFilter))]
     public class AppApiController : Controller
     {
+        private static readonly Random rnd = new();
         public class ConnectBotModel
         {
             public string BotUsername { get; set; }
@@ -26,6 +27,24 @@ namespace TCS.Controllers
             public string[] Messages { get; set; }
         }
 
+        public class BindModel
+        {
+            public string Name { get; set; }
+            public string[] Messages { get; set; }
+        }
+
+        public class EditBindModel
+        {
+            public string Name { get; set; }
+            public string[] Messages { get; set; }
+            public string OldName { get; set; }
+        }
+
+        public class SendBindMessageModel
+        {
+            public string bindname { get; set; }
+            public string botname { get; set; }
+        }
 
         [HttpPut]
         [Route("updateStreamerUsername")]
@@ -55,6 +74,7 @@ namespace TCS.Controllers
                     message = ""
                 });
             }
+            await Database.SharedArea.Log(id, $"Обновил ник стримера на {username}.");
             return Ok(new
             {
                 status = "ok"
@@ -100,6 +120,7 @@ namespace TCS.Controllers
                     message = "Ошибка подключения."
                 });
             }
+            await Database.SharedArea.Log(id, $"Подключил бота {model.BotUsername}.");
             return Ok(new
             {
                 status = "ok"
@@ -116,14 +137,16 @@ namespace TCS.Controllers
             {
                 await BotsManager.DisconnectBot(id, model.BotUsername);
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine(ex);
                 return Ok(new
                 {
                     status = "error",
                     message = ""
                 });
             }
+            await Database.SharedArea.Log(id, $"Отключил бота {model.BotUsername}.");
             return Ok(new
             {
                 status = "ok"
@@ -148,6 +171,7 @@ namespace TCS.Controllers
                     message = ""
                 });
             }
+            await Database.SharedArea.Log(id, $"Подключил всех ботов.");
             return Ok(new
             {
                 status = "ok"
@@ -172,6 +196,7 @@ namespace TCS.Controllers
                     message = ""
                 });
             }
+            await Database.SharedArea.Log(id, $"Отключил всех ботов.");
             return Ok(new
             {
                 status = "ok"
@@ -205,6 +230,7 @@ namespace TCS.Controllers
                 var r = await BotsManager.Send(id, model.BotName, model.Message);
                 if (r)
                 {
+                    await Database.SharedArea.Log(id, $"Отправил сообщение {model.Message}.");
                     return Ok(new
                     {
                         status = "ok"
@@ -257,6 +283,7 @@ namespace TCS.Controllers
             }
             model.Messages = model.Messages.Select(x => x.Trim()).Where(x => !(string.IsNullOrEmpty(x) || string.IsNullOrWhiteSpace(x))).ToArray();
             await Database.AppArea.UpdateSpamConfiguration(id, model);
+            await Database.SharedArea.Log(id, $"Обновил конфигурацию спама.");
             return Ok(new
             {
                 status = "ok"
@@ -292,6 +319,7 @@ namespace TCS.Controllers
             }
             model.Messages = model.Messages.Select(x => x.Trim()).Where(x => !(string.IsNullOrEmpty(x) || string.IsNullOrWhiteSpace(x))).ToArray();
             await BotsManager.StartSpam(id, model.Threads, model.Delay, model.Messages);
+            await Database.SharedArea.Log(id, $"Запустил спам.");
             return Ok(new
             {
                 status = "ok"
@@ -308,9 +336,183 @@ namespace TCS.Controllers
             {
                 await BotsManager.StopSpam(id);
             }
+            await Database.SharedArea.Log(id, $"Остановил спам.");
             return Ok(new
             {
                 status = "ok"
+            });
+        }
+
+        [HttpPost]
+        [Route("addBind")]
+        public async Task<ActionResult> AddBind(BindModel model)
+        {
+            var auth_token = Request.Headers.Authorization.ToString();
+            var id = await Database.SharedArea.GetId(auth_token);
+            model.Messages = model.Messages.Select(x => x.Trim()).Where(x => !(string.IsNullOrEmpty(x) || string.IsNullOrWhiteSpace(x))).ToArray();
+            if (model.Messages.Length == 0)
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "Список сообщений не может быть пустым."
+                });
+            }
+            model.Name = model.Name.Trim();
+            if (string.IsNullOrEmpty(model.Name) || string.IsNullOrWhiteSpace(model.Name))
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "Название не может быть пустым."
+                });
+            }
+            var r = await Database.AppArea.AddBind(id, model);
+            if (r)
+            {
+                await Database.SharedArea.Log(id, $"Добавил бинд {model.Name}.");
+                return Ok(new
+                {
+                    status = "ok",
+                    bindName = model.Name
+                });
+            }
+            else
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "Невозможно добавить. Возможно бинд с таким названием уже существует."
+                });
+            }
+        }
+
+        [HttpGet]
+        [Route("getBindMessages")]
+        public async Task<ActionResult> GetBindMessages(string bindName)
+        {
+            var auth_token = Request.Headers.Authorization.ToString();
+            var id = await Database.SharedArea.GetId(auth_token);
+            if (await Database.AppArea.BindExists(id, bindName))
+            {
+                var messages = await Database.AppArea.GetBindMessages(id, bindName);
+                return Ok(new
+                {
+                    status = "ok",
+                    messages
+                });
+            }
+            return Ok(new
+            {
+                status = "error",
+                message = "Бинд не найден."
+            });
+        }
+
+        [HttpPost]
+        [Route("editBind")]
+        public async Task<ActionResult> EditBind(EditBindModel model)
+        {
+            var auth_token = Request.Headers.Authorization.ToString();
+            var id = await Database.SharedArea.GetId(auth_token);
+            model.Messages = model.Messages.Select(x => x.Trim()).Where(x => !(string.IsNullOrEmpty(x) || string.IsNullOrWhiteSpace(x))).ToArray();
+            if (model.Messages.Length == 0)
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "Список сообщений не может быть пустым."
+                });
+            }
+            model.Name = model.Name.Trim();
+            if (string.IsNullOrEmpty(model.Name) || string.IsNullOrWhiteSpace(model.Name))
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "Название не может быть пустым."
+                });
+            }
+            if (model.Name == model.OldName)
+            {
+                await Database.AppArea.ReplaceBind(id, model);
+                await Database.SharedArea.Log(id, $"Обновил бинд {model.Name}.");
+                return Ok(new
+                {
+                    status = "ok",
+                    name = model.Name,
+                    messages = model.Messages
+                });
+            }
+            if (await Database.AppArea.BindExists(id, model.Name))
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "Бинда с таким названием уже существует."
+                });
+            }
+            await Database.AppArea.EditBind(id, model);
+            await Database.SharedArea.Log(id, $"Обновил бинд {model.Name}.");
+            return Ok(new
+            {
+                status = "ok",
+                name = model.Name,
+                messages = model.Messages
+            });
+        }
+
+        [HttpDelete]
+        [Route("deleteBind")]
+        public async Task<ActionResult> DeleteBind(string bindName)
+        {
+            var auth_token = Request.Headers.Authorization.ToString();
+            var id = await Database.SharedArea.GetId(auth_token);
+            if (await Database.AppArea.BindExists(id, bindName))
+            {
+                await Database.AppArea.DeleteBind(id, bindName);
+                await Database.SharedArea.Log(id, $"Удалил бинд {bindName}.");
+                return Ok(new
+                {
+                    status = "ok"
+                });
+            }
+            return Ok(new
+            {
+                status = "error",
+                message = "Бинд не найден."
+            });
+        }
+
+        [HttpPost]
+        [Route("sendBindMessage")]
+        public async Task<ActionResult> SendBindMessage(SendBindMessageModel model)
+        {
+            var auth_token = Request.Headers.Authorization.ToString();
+            var id = await Database.SharedArea.GetId(auth_token);
+            if (await Database.AppArea.BindExists(id, model.bindname))
+            {
+                if (BotsManager.IsConnected(id, model.botname))
+                {
+                    var messages = await Database.AppArea.GetBindMessages(id, model.bindname);
+                    var message = messages[rnd.Next(0, messages.Length)];
+                    await BotsManager.Send(id, model.botname, message);
+                    await Database.SharedArea.Log(id, $"Отправил сообщение {message} из бинда {model.bindname}.");
+                    return Ok(new
+                    {
+                        status = "ok"
+                    });
+                }
+                return Ok(new
+                {
+                    status = "error",
+                    message = "Бот не подключен."
+                });
+            }
+            return Ok(new
+            {
+                status = "error",
+                message = "Бинд не найден."
             });
         }
     }

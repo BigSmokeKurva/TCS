@@ -14,7 +14,7 @@ body {
     white-space: nowrap;
     -webkit-tap-highlight-color: transparent;
     -moz-tap-highlight-color: transparent;
-    margin: 30px 200px;
+    margin: 30px 130px;
 }
 
 main {
@@ -180,6 +180,7 @@ main {
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: rgb(174, 160, 248) rgb(46, 47, 51);
+    overflow-x: hidden;
 }
 
     .list::-webkit-scrollbar {

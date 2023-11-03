@@ -12,10 +12,9 @@ namespace TCS.Filters
             {
                 auth_token = context.HttpContext.Request.Cookies["auth_token"];
             }
-
             if (string.IsNullOrEmpty(auth_token) || !await Database.AuthArea.IsValidAuthToken(auth_token))
             {
-                context.Result = new RedirectToPageResult("/Index");
+                context.Result = new RedirectToPageResult("/Authorization");
 
                 // Очищаем все куки пользователя
                 foreach (var cookie in context.HttpContext.Request.Cookies.Keys)

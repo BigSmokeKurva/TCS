@@ -12,8 +12,12 @@ namespace TCS.Filters
             {
                 auth_token = context.HttpContext.Request.Cookies["auth_token"];
             }
-            if (string.IsNullOrEmpty(auth_token) ||
-                !(await Database.AuthArea.IsValidAuthToken(auth_token) && await Database.SharedArea.IsAdmin(await Database.SharedArea.GetId(auth_token))))
+            if (string.IsNullOrEmpty(auth_token) || !await Database.AuthArea.IsValidAuthToken(auth_token))
+            {
+                context.Result = new RedirectToPageResult("/Authorization");
+                return;
+            }
+            if (!await Database.SharedArea.IsAdmin(await Database.SharedArea.GetId(auth_token)))
             {
                 context.Result = new RedirectToPageResult("/App");
             }
