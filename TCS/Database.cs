@@ -737,7 +737,6 @@ namespace TCS
                     cmd.Parameters.AddWithValue("@keyPath", NpgsqlDbType.Array | NpgsqlDbType.Text, new[] { model.Name });
                     cmd.Parameters.AddWithValue("@values", NpgsqlDbType.Jsonb, model.Messages);
                     result = (bool)await cmd.ExecuteScalarAsync();
-                    Console.WriteLine(result);
                 }
                 return result;
             }

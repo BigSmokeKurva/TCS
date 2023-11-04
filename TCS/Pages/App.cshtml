@@ -21,7 +21,7 @@
 <body>
     <main>
         <div id="main_grid">
-            <span id="title">ChatWizzard</span>
+            <span id="title">RBTChat</span>
             <div class="user-panel">
                 @if (isAdmin)
                 {
@@ -99,13 +99,13 @@
                 </div>
                 <div id="content"></div>
                 <div id="stream-content">
-                    <iframe src="https://player.twitch.tv/?channel=@(string.IsNullOrEmpty(streamerUsername) ? "-" : streamerUsername)&parent=localhost"
+                    <iframe src="https://player.twitch.tv/?channel=@(string.IsNullOrEmpty(streamerUsername) ? "-" : streamerUsername)&parent=rbtchat.site"
                             height="100%"
                             width="100%"
                             frameborder="0"
                             scrolling="no">
                     </iframe>
-                    <iframe src="https://www.twitch.tv/embed/@(string.IsNullOrEmpty(streamerUsername) ? "-" : streamerUsername)/chat?darkpopout&parent=localhost"
+                    <iframe src="https://www.twitch.tv/embed/@(string.IsNullOrEmpty(streamerUsername) ? "-" : streamerUsername)/chat?darkpopout&parent=rbtchat.site"
                             height="100%"
                             width="100%"
                             frameborder="0"

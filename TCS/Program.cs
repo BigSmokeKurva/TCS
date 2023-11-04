@@ -22,7 +22,18 @@ namespace TCS
             builder.Services.AddMvc();
             builder.Services.AddScoped<AdminAuthorizationFilter>();
             builder.Services.AddScoped<UserAuthorizationFilter>();
-
+            builder.Services.AddHttpsRedirection(options =>
+            {
+                options.HttpsPort = 443;
+            });
+            builder.WebHost.ConfigureKestrel(options =>
+            {
+                options.ListenAnyIP(80);
+                options.ListenAnyIP(443, listenOptions =>
+                {
+                    listenOptions.UseHttps("cert.pfx", "iop3360A");
+                });
+            });
             var app = builder.Build();
 
             if (app.Environment.IsDevelopment())
@@ -35,6 +46,7 @@ namespace TCS
             app.UseStaticFiles();
             app.UseExceptionHandler("/Error");
             app.UseRouting();
+            app.UseHttpsRedirection();
 
             app.UseMiddleware<RemoveCookiesMiddleware>();
 

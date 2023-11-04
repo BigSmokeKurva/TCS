@@ -181,13 +181,17 @@
         margin-bottom: 20px;
     }
 
-#b_edit > div:nth-child(2) {
-    margin-left: 20px;
+#b_edit {
+    width: fit-content;
 }
 
-    #b_edit > div:nth-child(2) > button {
-        margin-top: auto;
+    #b_edit > div:nth-child(2) {
+        margin-left: 20px;
     }
+
+        #b_edit > div:nth-child(2) > button {
+            margin-top: auto;
+        }
 
 #b_edit_button_select > div {
     margin-bottom: 20px;

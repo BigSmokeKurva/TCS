@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System.Reflection;
 using System.Text.Json;
 using TCS.Filters;
 
@@ -117,6 +118,8 @@ namespace TCS.Controllers
                     var tokens = model.Value.EnumerateArray().Select(x => x.GetString()).Distinct();
                     var tokensChecked = (await TokenCheck.Check(tokens: tokens));
                     await Database.AdminArea.ChangeTokens(model.Id, tokensChecked);
+                    await BotsManager.StopSpam(model.Id);
+                    await BotsManager.DisconnectAllBots(model.Id);
                     return Ok(new
                     {
                         status = "ok",
@@ -125,6 +128,8 @@ namespace TCS.Controllers
                 case ChangeType.Proxies:
                     var proxies = ProxyCheck.Parse(model.Value.EnumerateArray().Select(x => x.GetString()));
                     await Database.AdminArea.ChangeProxies(model.Id, proxies);
+                    await BotsManager.StopSpam(model.Id);
+                    await BotsManager.DisconnectAllBots(model.Id);
                     return Ok(new
                     {
                         status = "ok",
@@ -157,6 +162,7 @@ namespace TCS.Controllers
         public async Task<ActionResult> DeleteUser(int id)
         {
             await Database.AdminArea.DeleteUser(id);
+            await BotsManager.Remove(id);
             return Ok(new
             {
                 status = "ok"

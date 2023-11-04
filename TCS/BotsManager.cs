@@ -239,6 +239,20 @@ namespace TCS
                 bots.Clear();
                 this.streamerUsername = streamerUsername;
             }
+            internal async Task Remove()
+            {
+                if (SpamStarted())
+                {
+                    await Database.SharedArea.Log(id, "Остановил спам. (Бездействие)");
+                    await StopSpam();
+                }
+                if (bots.Any())
+                {
+                    await Database.SharedArea.Log(id, "Отключил всех ботов. (Бездействие)");
+                    await DisconnectAllBots();
+                }
+                users.Remove(id);
+            }
         }
         public static Dictionary<int, User> users = new();
         public static bool IsConnected(int id, string botUsername)
@@ -364,6 +378,14 @@ namespace TCS
                 return;
             }
             await user.ChangeStreamerUsername(streamerUsername);
+        }
+        public static async Task Remove(int id)
+        {
+            if (!users.TryGetValue(id, out var user))
+            {
+                return;
+            }
+            await user.Remove();
         }
     }
 }

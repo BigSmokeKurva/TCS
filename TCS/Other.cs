@@ -41,7 +41,7 @@ public class UserValidators
     internal static bool ValidateStreamerUsername(string login)
     {
         int minLength = 4; // Минимальная длина
-        int maxLength = 16; // Максимальная длина
+        int maxLength = 20; // Максимальная длина
 
         bool hasValidLength = login.Length >= minLength && login.Length <= maxLength;
         bool matchesPattern = loginRegex.IsMatch(login);

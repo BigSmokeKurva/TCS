@@ -139,7 +139,6 @@ namespace TCS.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex);
                 return Ok(new
                 {
                     status = "error",

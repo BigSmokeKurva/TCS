@@ -36,7 +36,7 @@ namespace TCS
         public static ConfigurationJson.RootAccountJson RootAccount { get; set; }
         public static ConfigurationJson.TokenCheckJson TokenCheck { get; set; }
         public static ConfigurationJson.AppJson App { get; set; }
-        public static string PageTitle = "TCS";
+        public static string PageTitle = "RBTChat";
         internal static void Init()
         {
             var config = JsonSerializer.Deserialize<ConfigurationJson>(File.ReadAllText("configuration.json"));

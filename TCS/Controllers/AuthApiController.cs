@@ -56,8 +56,10 @@ namespace TCS.Controllers
             var cookieOptions = new CookieOptions
             {
                 HttpOnly = false, // Чтобы предотвратить доступ к cookie средствами JavaScript
+                // TODO: Переделать на true
+
                 Secure = true,   // Если ваше приложение работает по HTTPS
-                SameSite = SameSiteMode.None, // Установите в соответствии с вашими требованиями безопасности
+                SameSite = SameSiteMode.Strict, // Установите в соответствии с вашими требованиями безопасности
                 Expires = DateTime.UtcNow.AddMonths(1) // Время жизни cookie (например, 1 месяц)
             };
             Response.Cookies.Append("auth_token", auth_token, cookieOptions);
@@ -100,9 +102,11 @@ namespace TCS.Controllers
             var cookieOptions = new CookieOptions
             {
                 HttpOnly = false, // Чтобы предотвратить доступ к cookie средствами JavaScript
+                // TODO: Переделать на true
                 Secure = true,   // Если ваше приложение работает по HTTPS
-                SameSite = SameSiteMode.None, // Установите в соответствии с вашими требованиями безопасности
-                Expires = DateTime.UtcNow.AddMonths(1)
+                SameSite = SameSiteMode.Strict, // Установите в соответствии с вашими требованиями безопасности
+                Expires = DateTime.UtcNow.AddMonths(1),
+                Path = "/" // Время жизни cookie (например, 1 месяц)
             };
             Response.Cookies.Append("auth_token", auth_token, cookieOptions);
             await Database.SharedArea.Log(id, "Авторизовался.");

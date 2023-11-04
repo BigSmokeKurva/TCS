@@ -579,8 +579,8 @@ $(document).ready(function () {
                 $('#status-streamerusername').text(text);
                 streamerUsername = text;
                 onlineStreamerCheck();
-                $('#stream-content > iframe:nth-child(1)').attr('src', 'https://player.twitch.tv/?channel=' + streamerUsername + '&parent=localhost');
-                $('#stream-content > iframe:nth-child(2)').attr('src', 'https://www.twitch.tv/embed/' + streamerUsername + '/chat?darkpopout&parent=localhost');
+                $('#stream-content > iframe:nth-child(1)').attr('src', 'https://player.twitch.tv/?channel=' + streamerUsername + '&parent=rbtchat.site');
+                $('#stream-content > iframe:nth-child(2)').attr('src', 'https://www.twitch.tv/embed/' + streamerUsername + '/chat?darkpopout&parent=rbtchat.site');
             }
             $input.prop("disabled", true);
             $img.attr('src', '/App/edit.svg');
