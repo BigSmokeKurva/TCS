@@ -1,4 +1,46 @@
-﻿$(document).ready(function () {
+﻿function sendMessage() {
+    if (isRandom) {
+        nextBtn();
+    }
+    var bot = $('#bots-list #bots [class="item selected-item"]');
+    if (bot.length === 0) {
+        return;
+    }
+    var botname = bot.attr('botname');
+    var bindname = $(this).text()
+    const auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+
+    fetch('api/app/sendbindmessage', {
+        method: 'POST',
+        headers: {
+            "Authorization": auth_token,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            botname: botname,
+            bindname: bindname
+        })
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw Error();
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'ok') {
+                return;
+            }
+            showNotification(data.message);
+        })
+        .catch(error => {
+            showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+        });
+
+
+}
+
+$(document).ready(function () {
     let input = $('.m_full-width-input');
     const maxLength = 1000; // Максимальное количество символов
 
@@ -43,6 +85,10 @@
         $textarea.prop({ selectionStart: start + cleanText.length, selectionEnd: start + cleanText.length });
     });
 
+    $('.back-button').on('click', function () {
+        $('.m_full-width-input').val(lastMessage);
+    });
+
     $('.send-button').on('click', function () {
         if (isRandom) {
             nextBtn();
@@ -79,6 +125,7 @@
                 if (data.status === "error") {
                     showNotification(data.message);
                 } else {
+                    lastMessage = $('.m_full-width-input').val();
                     $('.m_full-width-input').val('');
                 }
             })
@@ -87,4 +134,7 @@
             });
 
     });
+
+    $('.b_binds button').on('click', sendMessage);
+
 });

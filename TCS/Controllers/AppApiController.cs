@@ -6,7 +6,7 @@ namespace TCS.Controllers
     [Route("api/app")]
     [ApiController]
     [TypeFilter(typeof(UserAuthorizationFilter))]
-    public class AppApiController : Controller
+    public class AppApiController : ControllerBase
     {
         private static readonly Random rnd = new();
         public class ConnectBotModel
@@ -280,7 +280,7 @@ namespace TCS.Controllers
                     message = "Количество потоков не может быть больше 50."
                 });
             }
-            model.Messages = model.Messages.Select(x => x.Trim()).Where(x => !(string.IsNullOrEmpty(x) || string.IsNullOrWhiteSpace(x))).ToArray();
+            model.Messages = model.Messages.Select(x => x.Trim()).Where(x => !(string.IsNullOrEmpty(x) || string.IsNullOrWhiteSpace(x) || x.Length > 49)).ToArray();
             await Database.AppArea.UpdateSpamConfiguration(id, model);
             await Database.SharedArea.Log(id, $"Обновил конфигурацию спама.");
             return Ok(new

@@ -471,7 +471,7 @@ namespace TCS
                 {
                     cmd.CommandText = "SELECT message, time FROM logs WHERE id = @id AND time::date = @time::date;";
                     cmd.Parameters.AddWithValue("@id", id);
-                    cmd.Parameters.AddWithValue("@time", time);
+                    cmd.Parameters.AddWithValue("@time", NpgsqlDbType.Date, DateTime.ParseExact(time, "dd.MM.yyyy", System.Globalization.CultureInfo.InvariantCulture));
                     await using var reader = await cmd.ExecuteReaderAsync();
                     while (await reader.ReadAsync())
                     {

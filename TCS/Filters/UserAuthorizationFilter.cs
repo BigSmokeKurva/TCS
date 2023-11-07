@@ -7,8 +7,13 @@ namespace TCS.Filters
     {
         public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
         {
-            string auth_token = context.HttpContext.Request.Headers["Authorization"];
-            if (string.IsNullOrEmpty(auth_token))
+            string auth_token;
+            if (context.HttpContext.Request.Path.StartsWithSegments("/api") && !context.HttpContext.Request.Path.StartsWithSegments("/api/auth/unauthorization"))
+            {
+                context.HttpContext.Request.Headers.Remove("Cookie");
+                auth_token = context.HttpContext.Request.Headers["Authorization"];
+            }
+            else
             {
                 auth_token = context.HttpContext.Request.Cookies["auth_token"];
             }

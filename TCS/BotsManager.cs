@@ -30,14 +30,12 @@ namespace TCS
                     Address = new Uri($"{proxy.Type}://{proxy.Host}:{proxy.Port}"),
                     Credentials = proxy.Credentials
                 };
-                var ctoken = new CancellationTokenSource();
-                ctoken.CancelAfter(5000);
-                await connection.ConnectAsync(new Uri($"wss://irc-ws.chat.twitch.tv:443"), ctoken.Token);
-                await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes("CAP REQ :twitch.tv/tags twitch.tv/commands")), WebSocketMessageType.Text, true, CancellationToken.None);
-                await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes("PASS oauth:" + token)), WebSocketMessageType.Text, true, CancellationToken.None);
-                await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"NICK {username}")), WebSocketMessageType.Text, true, CancellationToken.None);
-                await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"USER {username} 8 *:{username}")), WebSocketMessageType.Text, true, CancellationToken.None);
-                await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"JOIN #{streamerUsername}")), WebSocketMessageType.Text, true, CancellationToken.None);
+                await connection.ConnectAsync(new Uri($"wss://irc-ws.chat.twitch.tv:443"), new CancellationTokenSource(5000).Token);
+                await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes("CAP REQ :twitch.tv/tags twitch.tv/commands")), WebSocketMessageType.Text, true, new CancellationTokenSource(5000).Token);
+                await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes("PASS oauth:" + token)), WebSocketMessageType.Text, true, new CancellationTokenSource(5000).Token);
+                await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"NICK {username}")), WebSocketMessageType.Text, true, new CancellationTokenSource(5000).Token);
+                await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"USER {username} 8 *:{username}")), WebSocketMessageType.Text, true, new CancellationTokenSource(5000).Token);
+                await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"JOIN #{streamerUsername}")), WebSocketMessageType.Text, true, new CancellationTokenSource(5000).Token);
 
             }
             public async Task Disconnect()
@@ -48,11 +46,21 @@ namespace TCS
                 }
                 catch { }
                 connection.Dispose();
+                connection = null;
             }
-            public async Task Send(string message, CancellationToken? ctoken = null)
+            public async Task Send(string message, CancellationTokenSource? ctoken = null)
             {
-                ctoken ??= CancellationToken.None;
-                await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"PRIVMSG #{streamerUsername} :{message}")), WebSocketMessageType.Text, true, ctoken.Value);
+                ctoken ??= new CancellationTokenSource(5000);
+                try
+                {
+                    await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"PRIVMSG #{streamerUsername} :{message}")), WebSocketMessageType.Text, true, ctoken.Token);
+                }
+                catch
+                {
+                    await Disconnect();
+                    await Connect();
+                    await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"PRIVMSG #{streamerUsername} :{message}")), WebSocketMessageType.Text, true, ctoken.Token);
+                }
             }
         }
         public class User
@@ -74,6 +82,7 @@ namespace TCS
             {
                 if (task is null)
                 {
+                    cancellationToken = new();
                     task = Timer();
                     return;
                 }
@@ -88,7 +97,7 @@ namespace TCS
                 try
                 {
                     await Task.Delay(600000, cancellationToken.Token);
-                    if (SpamStarted())
+                    if (spamTasks.Any())
                     {
                         await Database.SharedArea.Log(id, "Остановил спам. (Бездействие)");
                         await StopSpam();
@@ -96,7 +105,16 @@ namespace TCS
                     if (bots.Any())
                     {
                         await Database.SharedArea.Log(id, "Отключил всех ботов. (Бездействие)");
-                        await DisconnectAllBots();
+                        await Parallel.ForEachAsync(bots, new ParallelOptions() { MaxDegreeOfParallelism = Configuration.App.DisconnectThreads }, async (bot, e) =>
+                        {
+                            try
+                            {
+                                await bot.Value.Disconnect();
+                            }
+                            catch { }
+                        });
+
+                        bots.Clear();
                     }
                     users.Remove(id);
                 }
@@ -192,6 +210,7 @@ namespace TCS
                 }
                 spamCancellationToken?.Dispose();
                 spamTasks.Clear();
+                spamCancellationToken = null;
             }
             internal async Task StartSpam(int threads, int delay, string[] messages)
             {
@@ -215,7 +234,7 @@ namespace TCS
                     try
                     {
                         var bot = bots.Values.ElementAt(rnd.Next(0, bots.Count));
-                        await bot.Send(messages[rnd.Next(0, messages.Length)], spamCancellationToken.Token);
+                        await bot.Send(messages[rnd.Next(0, messages.Length)], spamCancellationToken);
                         await Task.Delay(delay, spamCancellationToken.Token);
                     }
                     catch (TaskCanceledException)

@@ -1,5 +1,4 @@
 using TCS.Filters;
-using TCS.Middleware;
 
 namespace TCS
 {
@@ -47,8 +46,6 @@ namespace TCS
             app.UseExceptionHandler("/Error");
             app.UseRouting();
             app.UseHttpsRedirection();
-
-            app.UseMiddleware<RemoveCookiesMiddleware>();
 
             app.MapControllers();
             app.MapRazorPages();

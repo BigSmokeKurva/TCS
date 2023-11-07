@@ -10,6 +10,7 @@ var avalibleMasClick = true;
 const history = [];
 var historyIndex = 0;
 var isRandom = false;
+var lastMessage = "";
 
 function scrollBotList() {
     var targetElement = document.getElementById('bots'); // Получите контейнер по его ID
@@ -152,29 +153,27 @@ function updateUnderline(element) {
     underline.style.left = leftOffset - 16 + 'px';
 }
 
-function loadContent(partialViewName) {
-    var auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+async function loadContent(partialViewName) {
+    try {
+        var auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
 
-    fetch(`/App/LoadPartialView?partialViewName=${partialViewName}`, {
-        method: 'GET',
-        headers: {
-            'Authorization': auth_token
-        }
-    })
-        .then(response => {
-            if (response.ok) {
-                return response.text(); // Используем метод .json() для парсинга JSON
-            } else {
-                throw new Error();
+        const response = await fetch(`/App/LoadPartialView?partialViewName=${partialViewName}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': auth_token
             }
-        })
-        .then(data => {
-            $("#content").html(data);
-        })
-        .catch(error => {
-            // Обработка ошибки
-            window.location.href = '/';
         });
+
+        if (response.ok) {
+            const data = await response.text();
+            $("#content").html(data);
+        } else {
+            throw new Error();
+        }
+    } catch (error) {
+        // Обработка ошибки
+        window.location.href = '/';
+    }
 }
 
 function validateStreamLogin(login) {
@@ -483,7 +482,8 @@ function disconnectAllBots() {
 
 
 $(document).ready(function () {
-    spamButton.addEventListener('click', function () {
+    spamButton.addEventListener('click', async function () {
+        await loadContent("Spam");
         updateUnderline(spamButton);
         spamButton.classList.add("button-active");
         spamButton.disabled = true;
@@ -491,10 +491,10 @@ $(document).ready(function () {
         bindsButton.disabled = false;
         manualButton.classList.remove("button-active");
         manualButton.disabled = false;
-        loadContent("Spam");
     });
 
-    bindsButton.addEventListener('click', function () {
+    bindsButton.addEventListener('click', async function () {
+        await loadContent("Binds");
         updateUnderline(bindsButton);
         bindsButton.classList.add("button-active");
         bindsButton.disabled = true;
@@ -502,10 +502,10 @@ $(document).ready(function () {
         spamButton.disabled = false;
         manualButton.classList.remove("button-active");
         manualButton.disabled = false;
-        loadContent("Binds");
     });
 
-    manualButton.addEventListener('click', function () {
+    manualButton.addEventListener('click', async function () {
+        await loadContent("Manual");
         updateUnderline(manualButton);
         manualButton.classList.add("button-active");
         manualButton.disabled = true;
@@ -513,7 +513,6 @@ $(document).ready(function () {
         bindsButton.disabled = false;
         spamButton.classList.remove("button-active");
         spamButton.disabled = false;
-        loadContent("Manual");
     });
 
     $("#exit-button").on("click", function () {
