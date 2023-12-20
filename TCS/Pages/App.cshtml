@@ -1,20 +1,31 @@
 ﻿@page
 @model TCS.Pages.AppModel
 @using TCS;
+@using TCS.Database
+@using Microsoft.EntityFrameworkCore
+@using TCS.BotsManager
 @{
-    var auth_token = Request.Cookies["auth_token"];
-    var id = await Database.SharedArea.GetId(auth_token);
-    var username = await Database.SharedArea.GetUsername(id);
-    var count_tokens = await Database.AppArea.GetCountTokens(id);
-    var streamerUsername = await Database.AppArea.GetStreamerUsername(id);
-    var isAdmin = await Database.SharedArea.IsAdmin(id);
-    var bots = await Database.AppArea.GetBotsNicks(id);
-    var botsData = bots.ToDictionary(x => x, x => BotsManager.IsConnected(id, x));
+    int id;
+    string username;
+    int count_tokens;
+    string streamerUsername;
+    bool isAdmin;
+    List<string> bots;
+    Dictionary<string, bool> botsData;
+    var auth_token = Guid.Parse(Request.Cookies["auth_token"]);
+    var user = await Model.db.GetUser(auth_token);
+    id = user.Id;
+    username = user.Username;
+    count_tokens = user.Configuration.Tokens.Count;
+    streamerUsername = user.Configuration.StreamerUsername;
+    isAdmin = user.Admin;
+    bots = user.Configuration.Tokens.Values.ToList();
+    botsData = bots.ToDictionary(x => x, x => Manager.IsConnected(id, x));
 }
 
 <html>
 <head>
-    <title>@Configuration.PageTitle</title>
+    <title>RBTChat</title>
     <link rel="stylesheet" href="~/App/style.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>

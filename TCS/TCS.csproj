@@ -7,34 +7,22 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="wwwroot\Новая папка1\**" />
-    <Content Remove="wwwroot\Новая папка1\**" />
-    <EmbeddedResource Remove="wwwroot\Новая папка1\**" />
-    <None Remove="wwwroot\Новая папка1\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Remove="cert.pfx" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Npgsql" Version="7.0.6" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="8.0.0" />
+    <PackageReference Include="NLog.Web.AspNetCore" Version="5.3.7" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="6.5.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Update="configuration.json">
+    <Content Update="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-  </ItemGroup>
-
-  <ItemGroup>
-    <UpToDateCheckInput Remove="Pages\AdminPanel.cshtml" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <_ContentIncludedByDefault Remove="Pages\AdminPanel.cshtml" />
   </ItemGroup>
 
   <ItemGroup>

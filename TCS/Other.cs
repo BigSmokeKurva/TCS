@@ -1,8 +1,8 @@
 ﻿using System.Collections.Concurrent;
-using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
-using static TCS.ProxyCheck.Proxy;
+using TCS.Database.Models;
+using static TCS.Database.Models.Proxy;
 
 namespace TCS;
 
@@ -71,6 +71,7 @@ public class TokenCheck
                 {"Sec-Fetch-Mode", "cors"},
                 {"Sec-Fetch-Site", "same-site"},
             };
+    internal static int Threads;
 
     internal static async Task<Dictionary<string, string>> Check(IEnumerable<string> tokens)
     {
@@ -81,7 +82,7 @@ public class TokenCheck
         {
             client.DefaultRequestHeaders.Add(header.Key, header.Value);
         }
-        await Parallel.ForEachAsync(tokens, new ParallelOptions() { MaxDegreeOfParallelism = Configuration.TokenCheck.Threads }, async (token, e) =>
+        await Parallel.ForEachAsync(tokens, new ParallelOptions() { MaxDegreeOfParallelism = Threads }, async (token, e) =>
         {
             try
             {
@@ -128,32 +129,9 @@ public class TokenCheck
 public class ProxyCheck
 {
     private static readonly HashSet<string> Types = new() { "http", "socks5" };
-    public struct Proxy
-    {
-        public struct UnSafeCredentials : ICredentials
-        {
-            public UnSafeCredentials(string username, string password)
-            {
-                Username = username;
-                Password = password;
-            }
-            public string Username { get; set; }
-            public string Password { get; set; }
-
-            public NetworkCredential GetCredential(Uri uri, string authType)
-            {
-                return new NetworkCredential(Username, Password);
-            }
-        }
-
-        public string Type { get; set; }
-        public string Host { get; set; }
-        public string Port { get; set; }
-        public UnSafeCredentials? Credentials { get; set; }
-    }
     internal static List<Proxy> Parse(IEnumerable<string> proxies)
     {
-        List<Proxy> result = new List<Proxy>();
+        List<Proxy> result = [];
 
         foreach (var proxy in proxies)
         {

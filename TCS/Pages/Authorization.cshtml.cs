@@ -1,13 +1,15 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
+using TCS.Database;
 
 namespace TCS.Pages
 {
-    public class AuthorizationModel : PageModel
+    public class AuthorizationModel(DatabaseContext db) : PageModel
     {
+        public readonly DatabaseContext db = db;
         public async Task OnGet()
         {
-            var auth_token = Request.Cookies["auth_token"];
-            if (auth_token is not null && await Database.AuthArea.IsValidAuthToken(auth_token))
+            if (Guid.TryParse(Request.Cookies["auth_token"], out var auth_token) && await db.Sessions.AnyAsync(x => x.AuthToken == auth_token))
                 Response.Redirect("/App");
         }
     }

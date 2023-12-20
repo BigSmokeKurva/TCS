@@ -1,14 +1,16 @@
 ﻿@page
 @model TCS.Pages.AdminPanelModel
 @using TCS;
+@using TCS.Database
+@using Microsoft.EntityFrameworkCore
 @{
-    var auth_token = Request.Cookies["auth_token"];
-    var id = await Database.SharedArea.GetId(auth_token);
-    var username = await Database.SharedArea.GetUsername(id);
+    string username;
+    var auth_token = Guid.Parse(Request.Cookies["auth_token"]);
+    username = await Model.db.Users.Where(x => Model.db.Sessions.Any(y => y.AuthToken == auth_token && x.Id == y.Id)).Select(x => x.Username).FirstAsync();
 }
 <html>
 <head>
-    <title>@Configuration.PageTitle</title>
+    <title>RBTChat</title>
     <link rel="stylesheet" href="~/AdminPanel/style.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>

@@ -1,17 +1,20 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using TCS.Database;
 
 namespace TCS.Controllers
 {
     [Route("App")]
-    public class AppController : Controller
+    public class AppController(DatabaseContext db) : Controller
     {
+        public readonly DatabaseContext db = db;
+
         [HttpGet("LoadPartialView")]
         public async Task<IActionResult> LoadPartialView(string partialViewName)
         {
-            var auth_token = Request.Headers.Authorization.ToString();
-            if (auth_token is not null && await Database.AuthArea.IsValidAuthToken(auth_token))
+            if (Guid.TryParse(Request.Headers.Authorization, out var auth_token) && await db.Sessions.AnyAsync(x => x.AuthToken == auth_token))
             {
-                return PartialView(partialViewName);
+                return PartialView(partialViewName, this);
             }
             foreach (var cookie in Response.HttpContext.Request.Cookies.Keys)
             {

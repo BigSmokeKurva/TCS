@@ -1,34 +1,22 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using TCS.Controllers.Models;
+using TCS.Database;
 
 namespace TCS.Controllers
 {
-    public class RegistrationModel
-    {
-        public string Email { get; set; }
-        public string Login { get; set; }
-        public string Password { get; set; }
-    }
-    public class AuthorizationModel
-    {
-        public string Login { get; set; }
-        public string Password { get; set; }
-    }
 
     [ApiController]
     [Route("api/auth")]
-    public class AuthApiController : ControllerBase
+    public class AuthApiController(ILogger<AuthApiController> logger, DatabaseContext db) : ControllerBase
     {
-        private readonly ILogger<AuthApiController> _logger;
-        public AuthApiController(ILogger<AuthApiController> logger)
-        {
-            _logger = logger;
-        }
+        private readonly ILogger<AuthApiController> _logger = logger;
+        private readonly DatabaseContext db = db;
 
         [HttpPost]
         [Route("registration")]
         public async Task<ActionResult> Registration([FromBody] RegistrationModel model)
         {
-            string error;
             if (!(UserValidators.ValidateEmail(model.Email) && UserValidators.ValidateLogin(model.Login) && UserValidators.ValidatePassword(model.Password)))
             {
                 // Данные не прошли валидацию
@@ -39,32 +27,55 @@ namespace TCS.Controllers
                 };
                 return Ok(data);
             }
-            error = await Database.AuthArea.CheckBusy(model);
-            if (error != "ОК")
+
+            if (await db.Users.AnyAsync(x => x.Username == model.Login))
             {
-                var data = new
+                return Ok(new
                 {
                     status = "error",
-                    message = error
-                };
-                return Ok(data);
+                    message = "Данный логин уже используется."
+                });
             }
-            int id = await Database.AuthArea.AddUser(model);
-            var auth_token = await Database.AuthArea.CreateSession(id);
-            // Создание и добавление cookie в ответ
+            if (await db.Users.AnyAsync(x => x.Email == model.Email))
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "Данная почта уже используется."
+                });
+            }
+            var user = await db.Users.AddAsync(new()
+            {
+                Email = model.Email,
+                Username = model.Login,
+                Password = model.Password,
+                Sessions = [
+                   new()
+                   {
+                       Expires = TimeHelper.GetMoscowTime().AddDays(30),
+                   }
+               ],
+                Configuration = new(),
+                Logs = [
+                   new()
+                   {
+                       Time = TimeHelper.GetMoscowTime(),
+                       Message = "Зарегистрировался."
+                   }
+               ]
+            });
+            await db.SaveChangesAsync();
 
             var cookieOptions = new CookieOptions
             {
-                HttpOnly = false, // Чтобы предотвратить доступ к cookie средствами JavaScript
-                // TODO: Переделать на true
+                HttpOnly = false,
 
-                Secure = true,   // Если ваше приложение работает по HTTPS
-                SameSite = SameSiteMode.Strict, // Установите в соответствии с вашими требованиями безопасности
-                Expires = DateTime.UtcNow.AddMonths(1) // Время жизни cookie (например, 1 месяц)
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = TimeHelper.GetMoscowTime().AddDays(30)
             };
-            Response.Cookies.Append("auth_token", auth_token, cookieOptions);
+            Response.Cookies.Append("auth_token", user.Entity.Sessions.First().AuthToken.ToString(), cookieOptions);
             // редирект на главную страницу
-            await Database.SharedArea.Log(id, "Зарегистрировался.");
             return Ok(new
             {
                 status = "ok"
@@ -75,7 +86,6 @@ namespace TCS.Controllers
         [Route("authorization")]
         public async Task<ActionResult> Authorization([FromBody] AuthorizationModel model)
         {
-            string error;
             if (!(UserValidators.ValidateLogin(model.Login) && UserValidators.ValidatePassword(model.Password)))
             {
                 // Данные не прошли валидацию
@@ -87,8 +97,9 @@ namespace TCS.Controllers
                 return Ok(data);
             }
             // проверка на существование пользователя
-            var id = await Database.AuthArea.CheckUser(model);
-            if (id == -1)
+
+            var user = await db.Users.FirstOrDefaultAsync(x => x.Username == model.Login && x.Password == model.Password);
+            if (user is null)
             {
                 var data = new
                 {
@@ -98,18 +109,23 @@ namespace TCS.Controllers
                 return Ok(data);
             }
             // получаем токен сессии
-            var auth_token = await Database.AuthArea.CreateSession(id);
+            var auth_token = await db.Sessions.AddAsync(new()
+            {
+                Id = user.Id,
+                Expires = TimeHelper.GetMoscowTime().AddDays(30)
+            });
+            await db.AddLog(user, "Авторизовался.");
+            await db.SaveChangesAsync();
+
             var cookieOptions = new CookieOptions
             {
-                HttpOnly = false, // Чтобы предотвратить доступ к cookie средствами JavaScript
-                // TODO: Переделать на true
-                Secure = true,   // Если ваше приложение работает по HTTPS
-                SameSite = SameSiteMode.Strict, // Установите в соответствии с вашими требованиями безопасности
-                Expires = DateTime.UtcNow.AddMonths(1),
-                Path = "/" // Время жизни cookie (например, 1 месяц)
+                HttpOnly = false,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = TimeHelper.GetMoscowTime().AddDays(30),
+                Path = "/"
             };
-            Response.Cookies.Append("auth_token", auth_token, cookieOptions);
-            await Database.SharedArea.Log(id, "Авторизовался.");
+            Response.Cookies.Append("auth_token", auth_token.Entity.AuthToken.ToString(), cookieOptions);
             // редирект на главную страницу
             return Ok(new
             {
@@ -121,13 +137,14 @@ namespace TCS.Controllers
         [Route("unauthorization")]
         public async Task<ActionResult> Unauthorization()
         {
-            // Получаем токен сессии из cookie
-            var auth_token = Request.Cookies["auth_token"];
-            if (!await Database.AuthArea.IsValidAuthToken(auth_token))
+
+            var auth_token = Guid.Parse(Request.Cookies["auth_token"]);
+
+            if (!await db.Sessions.AnyAsync(x => x.AuthToken == auth_token))
                 return Ok(new { status = "ok" });
-            // удалением его из базы
-            if (auth_token is not null)
-                await Database.SharedArea.DeleteAuthToken(auth_token);
+            db.Sessions.Remove(await db.Sessions.FindAsync(auth_token));
+            await db.AddLog(await db.Users.FirstAsync(x => x.Sessions.Any(y => y.AuthToken == auth_token && x.Id == y.Id)), "Вышел из аккаунта.");
+            await db.SaveChangesAsync();
             // Удаляем все cookie на сайте
             foreach (var cookie in Request.Cookies.Keys)
             {

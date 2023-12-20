@@ -1,10 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.EntityFrameworkCore;
+using TCS.Database;
 
 namespace TCS.Filters
 {
-    public class UserAuthorizationFilter : IAsyncAuthorizationFilter
+    public class UserAuthorizationFilter(DatabaseContext db) : IAsyncAuthorizationFilter
     {
+        private readonly DatabaseContext db = db;
         public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
         {
             string auth_token;
@@ -17,7 +20,7 @@ namespace TCS.Filters
             {
                 auth_token = context.HttpContext.Request.Cookies["auth_token"];
             }
-            if (string.IsNullOrEmpty(auth_token) || !await Database.AuthArea.IsValidAuthToken(auth_token))
+            if (!Guid.TryParse(auth_token, out Guid auth_token_uid) || !await db.Sessions.AnyAsync(x => x.AuthToken == auth_token_uid))
             {
                 context.Result = new RedirectToPageResult("/Authorization");
 
