@@ -9,6 +9,8 @@ namespace TCS.Database
         public DbSet<Session> Sessions { get; set; }
         public DbSet<Log> Logs { get; set; }
         public DbSet<Models.Configuration> Configurations { get; set; }
+        public DbSet<FilterWord> FilterWords { get; set; }
+        public DbSet<TokenInfo> Tokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -22,6 +24,7 @@ namespace TCS.Database
                 entity.Property(e => e.Password).HasColumnName("password").IsRequired().HasMaxLength(50);
                 entity.Property(e => e.Email).HasColumnName("email").IsRequired().HasMaxLength(50);
                 entity.Property(e => e.Admin).HasColumnName("admin");
+                entity.Property(e => e.Paused).HasColumnName("paused");
 
                 entity.HasOne(e => e.Configuration)
                     .WithOne()
@@ -66,26 +69,45 @@ namespace TCS.Database
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Id).HasColumnName("id");
                 entity.Property(e => e.Tokens).HasColumnType("jsonb").HasColumnName("tokens");
-                entity.Property(e => e.Proxies).HasColumnType("jsonb").HasColumnName("proxies");
                 entity.Property(e => e.StreamerUsername).HasMaxLength(50).HasColumnName("streamerUsername");
                 entity.Property(e => e.SpamThreads).HasColumnName("spamThreads");
                 entity.Property(e => e.SpamDelay).HasColumnName("spamDelay");
                 entity.Property(e => e.SpamMessages).HasColumnType("varchar(50)[]").HasColumnName("spamMessages");
                 entity.Property(e => e.Binds).HasColumnType("jsonb").HasColumnName("binds");
             });
+
+            // FilterWord
+            modelBuilder.Entity<FilterWord>(entity =>
+            {
+                entity.ToTable("filter_words");
+                entity.HasKey(e => e.Word);
+                entity.Property(e => e.Word).HasColumnName("word");
+            });
+
+            // Tokens
+            modelBuilder.Entity<TokenInfo>(entity =>
+            {
+                entity.ToTable("tokens_info");
+                entity.HasKey(e => e.Token);
+                entity.HasAlternateKey(e => e.Username);
+                entity.Property(e => e.Token).HasColumnName("token");
+                entity.Property(e => e.Username).HasColumnName("username");
+                entity.Property(e => e.Followed).HasColumnName("followed");
+            });
         }
-        internal async Task AddLog(int id, string message)
+        internal async Task AddLog(int id, string message, LogType type)
         {
             await Logs.AddAsync(new Log
             {
                 Id = id,
                 Message = message,
-                Time = TimeHelper.GetMoscowTime()
+                Time = TimeHelper.GetMoscowTime(),
+                Type = type
             });
         }
-        internal async Task AddLog(User user, string message)
+        internal async Task AddLog(User user, string message, LogType type)
         {
-            await AddLog(user.Id, message);
+            await AddLog(user.Id, message, type);
         }
         internal async Task<int> GetId(Guid auth_token)
         {
@@ -98,6 +120,16 @@ namespace TCS.Database
         internal async Task<Models.Configuration> GetConfiguration(Guid auth_token)
         {
             return await Configurations.FirstAsync(x => Sessions.First(y => y.AuthToken == auth_token).Id == x.Id);
+        }
+        internal async Task<bool> CheckMessageFilter(string message)
+        {
+            // true if message contains any filter word
+            var words = message.Split(' ');
+            return await FilterWords.AnyAsync(x => words.Contains(x.Word));
+        }
+        internal async Task<bool> CheckMessageFilter(string[] message)
+        {
+            return await FilterWords.AnyAsync(x => message.Contains(x.Word));
         }
     }
 }

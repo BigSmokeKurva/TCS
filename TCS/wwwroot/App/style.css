@@ -446,9 +446,8 @@ main {
 
 .item {
     margin-right: 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
     background: transparent;
     transition: background-color 0.1s;
     border-radius: 4px;
@@ -498,6 +497,109 @@ main {
     #player-container #random-btn {
         margin: 0 48px;
     }
+
+#window-container {
+    display: none;
+    position: fixed;
+    z-index: 2;
+}
+
+#window {
+    width: 457px;
+    height: 186px;
+    background-color: rgb(63,66,70);
+    display: grid;
+    grid-template-rows: 1fr auto auto;
+}
+
+    #window > .editor-underline {
+        height: 2px;
+        width: 100%;
+        background-color: rgb(45,45,50);
+    }
+
+    #window #window-body {
+        margin: 30px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+        #window #window-body > span {
+            color: white;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+    #window #window-buttons {
+        margin-left: auto;
+    }
+
+    #window #save-window-btn {
+        background-color: rgb(118,104,203);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        height: 40px;
+        width: 119px;
+        justify-content: center;
+        align-items: center;
+        margin: 8px;
+        cursor: pointer;
+    }
+
+    #window #cancel-window-btn {
+        background-color: transparent;
+        color: white;
+        height: 40px;
+        width: 119px;
+        margin-right: 24px;
+        border-radius: 4px;
+        border: none;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+    }
+
+        #window #cancel-window-btn:hover {
+            background-color: rgb(75,76,83);
+        }
+
+.overlay {
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: none;
+}
+
+.number-input {
+    width: 200px;
+    height: 42px;
+    border-radius: 4px;
+    outline: none;
+    background-color: rgb(33, 33, 38);
+    border: none;
+    color: white;
+    font-size: 18px;
+    text-align: left;
+    padding: 15px;
+}
+
+    .number-input::-webkit-inner-spin-button,
+    .number-input::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    .number-input[type="number"] {
+        -moz-appearance: textfield;
+    }
+
 
 @media (max-width: 768px) {
     body {
@@ -616,5 +718,26 @@ main {
 
     .notification-content {
         white-space: pre-wrap;
+    }
+
+    #window-container {
+        position: fixed;
+        top: 50%;
+    }
+
+    #window {
+        width: 310px;
+    }
+
+    #window-buttons {
+        margin-right: auto;
+    }
+
+    #window #cancel-window-btn {
+        margin-right: 0;
+    }
+
+    #window #save-window-btn {
+        margin-left: 0;
     }
 }

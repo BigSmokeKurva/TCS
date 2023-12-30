@@ -2,17 +2,21 @@
 let users = {};
 let selectedUser = null;
 let selectedUserInfo = null;
+let editorTarget = null;
 const search = $('.search > input');
 const $logsSelectedOption = $('#logs-select > .selected-option');
 const $logsOptions = $('#logs-select > .options');
 const notificationContainer = document.getElementById('notification-container');
+const chatLogsButton = document.getElementById('chat-logs');
+const actionsLogsButton = document.getElementById('actions-logs');
+const underline = document.getElementById('underline');
 const propertyMappings = {
     'username': 0,
     'password': 1,
     'email': 2,
     'admin': 3,
     'tokens': 4,
-    'proxies': 5
+    'paused': 5
 };
 
 function showNotification(notificationText) {
@@ -56,6 +60,15 @@ function showNotification(notificationText) {
 
 }
 
+function updateUnderline(element) {
+    const buttonRect = element.getBoundingClientRect();
+    const containerRect = document.querySelector('.button-container.logs_title').getBoundingClientRect();
+    const leftOffset = buttonRect.left - containerRect.left;
+
+    underline.style.width = buttonRect.width + 32 + 'px';
+    underline.style.left = leftOffset - 16 + 'px';
+}
+
 async function getInfoForSelectedUser() {
     const auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
 
@@ -80,11 +93,11 @@ async function getInfoForSelectedUser() {
     }
 }
 
-function getLogs() {
+function getLogs(type) {
     var selectedTime = $logsSelectedOption.find('span').text();
     var auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
 
-    fetch('api/admin/getlogs?id=' + selectedUser.id + '&time=' + selectedTime, {
+    fetch('api/admin/getlogs?id=' + selectedUser.id + '&time=' + selectedTime + '&type=' + type, {
         method: 'GET',
         headers: {
             "Authorization": auth_token
@@ -133,14 +146,12 @@ async function selectUser(button) {
     selectedUser = users[user_id];
     selectedUserInfo = await getInfoForSelectedUser();
 
-    // Используем тернарный оператор для определения значения streamerUsername
-    $('#streamer-username').text(selectedUserInfo.streamerUsername ? selectedUserInfo.streamerUsername : "-");
     $('#user-username').text(selectedUser.username);
     $('#password').text(selectedUserInfo.password);
     $('#tokens-count').text(selectedUserInfo.tokensCount);
-    $('#proxies-count').text(selectedUserInfo.proxiesCount);
     $('#email').text(selectedUser.email);
-    $("#checkbox").prop("checked", selectedUserInfo.admin);
+    $("#admin-btn").text(selectedUserInfo.admin ? "Снять админку" : "Выдать админку");
+    $('#pause-btn').text(selectedUserInfo.paused ? "Снять паузу" : "Поставить на паузу");
 
     const logsTimeList = $('#logs-time-list');
     logsTimeList.empty();
@@ -155,14 +166,18 @@ async function selectUser(button) {
         $(this).addClass('selected');
         $logsSelectedOption.find('span').text($(this).text());
         toggleLogs();
-        getLogs();
+        if (chatLogsButton.classList.contains('button-active'))
+            var type = 0;
+        else if (actionsLogsButton.classList.contains('button-active'))
+            var type = 1;
+
+        getLogs(type);
     });
 
     // Выбираем первый элемент и обновляем отображение
     const firstLi = logsTimeList.find('li:first');
     firstLi.addClass('selected');
     $logsSelectedOption.find('span').text(firstLi.text());
-    getLogs();
     $("#info-grid").show();
 
 }
@@ -187,8 +202,9 @@ function getUsers() {
             usersList.empty();
 
             data.forEach(user => {
-                var btn = $('<button>', { user_id: user.id }).text(user.username).on('click', function () {
-                    selectUser(this);
+                var btn = $('<button>', { user_id: user.id }).text(user.username).on('click', async function () {
+                    await selectUser(this);
+                    chatLogsButton.click();
                 });
                 users[user.id] = user;
 
@@ -322,31 +338,6 @@ function uploadTokens(input) {
     reader.readAsText(selectedFile);
 }
 
-function uploadProxies(input) {
-    var selectedFile = input[0].files[0];
-    if (!selectedFile) {
-        return;
-    }
-
-    var reader = new FileReader();
-
-    reader.onload = async function (e) {
-        var fileContent = e.target.result;
-        var lines = fileContent.split('\n')
-            .map(line => line.trim().replace(/\r/g, ''))
-            .filter(line => line !== '');
-
-        try {
-            var response = await sendEditUserRequest('proxies', lines);
-            $('#proxies-count').text(response.message);
-        } catch (error) {
-            showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
-        }
-    };
-
-    reader.readAsText(selectedFile);
-}
-
 function download(data, fileName) {
     // Создаем новый Blob (бинарный объект) с вашими данными и типом MIME "text/plain"
     const blob = new Blob([data], { type: "text/plain" });
@@ -386,61 +377,32 @@ async function downloadTokens() {
         }
         const data = await response.json();
 
-        let resultString = "";
+        //let resultString = "";
 
-        // Перебираем элементы словаря
-        for (const key in data) {
-            if (data.hasOwnProperty(key)) {
-                resultString += key + ":" + data[key] + "\n";
-            }
-        }
+        //// Перебираем элементы словаря
+        //for (const key in data) {
+        //    if (data.hasOwnProperty(key)) {
+        //        resultString += key + ":" + data[key] + "\n";
+        //    }
+        //}
 
-        download(resultString, 'tokensAndUsernames.txt');
-        resultString = "";
+        //download(resultString, 'tokensAndUsernames.txt');
+        //resultString = "";
 
-        // Перебираем элементы словаря
-        for (const key in data) {
-            if (data.hasOwnProperty(key)) {
-                resultString += key + "\n";
-            }
-        }
+        //// Перебираем элементы словаря
+        //for (const key in data) {
+        //    if (data.hasOwnProperty(key)) {
+        //        resultString += key + "\n";
+        //    }
+        //}
 
-        download(resultString, 'tokens.txt');
+        download(data.join('\n'), 'tokens.txt');
 
     } catch (error) {
         showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
     }
 }
 
-async function downloadProxies() {
-    const auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
-
-    try {
-        const response = await fetch('api/admin/getproxies?id=' + selectedUser.id, {
-            method: 'GET',
-            headers: {
-                "Authorization": auth_token
-            }
-        });
-
-        if (!response.ok) {
-            showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
-            return;
-        }
-
-        const data = await response.json();
-
-        let resultString = "";
-
-        data.forEach(proxy => {
-            resultString += proxy + "\n";
-        });
-
-        download(resultString, 'proxies.txt');
-    } catch (error) {
-        showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
-    }
-}
 
 function setupFileInput(input, uploadFunction) {
     input.off('change');
@@ -449,6 +411,130 @@ function setupFileInput(input, uploadFunction) {
     });
     input.click();
     input.val('');
+}
+
+function uploadFilterWords(input) {
+    var selectedFile = input[0].files[0];
+    if (!selectedFile) {
+        return;
+    }
+
+    var reader = new FileReader();
+
+    reader.onload = async function (e) {
+        var fileContent = e.target.result;
+        var lines = fileContent.split('\n')
+            .map(line => line.trim().replace(/\r/g, ''))
+            .filter(line => line !== '');
+
+        try {
+            const auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+
+            var response = await fetch('api/admin/uploadfilter', {
+                method: 'POST',
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": auth_token
+                },
+                body: JSON.stringify(lines)
+            });
+
+            if (!response.ok) {
+                showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+                return;
+            }
+        } catch (error) {
+            showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+        }
+    };
+
+    reader.readAsText(selectedFile);
+}
+
+function downloadFilterWords() {
+    const auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+
+    fetch('api/admin/getfilter', {
+        method: 'GET',
+        headers: {
+            "Authorization": auth_token
+        }
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw Error();
+            }
+            return response.json();
+        })
+        .then(data => {
+            let resultString = "";
+
+            data.forEach(word => {
+                resultString += word + "\n";
+            });
+
+            download(resultString, 'filter.txt');
+        })
+        .catch(error => {
+            showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+        });
+}
+
+function showEditor(target, list) {
+    $('#editor-container, .overlay').fadeIn(50);
+    editorTarget = target;
+    $('#editor-textarea').focus();
+    $('#editor-textarea').val(list.join('\n'));
+}
+
+function cancelEditor() {
+    $('#editor-container, .overlay').fadeOut(50);
+    editorTarget = null;
+    $('#editor-textarea').val('');
+    $(document).focus();
+}
+
+async function saveEditor() {
+    var text = $('#editor-textarea').val();
+    var lines = text.split('\n')
+        .map(line => line.trim().replace(/\r/g, ''))
+        .filter(line => line !== '');
+
+    var auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+    var url;
+    switch (editorTarget) {
+        case 'filter':
+            url = 'api/admin/uploadfilter';
+            break;
+        case 'tokens':
+            cancelEditor();
+            showNotification("Проверка токенов...");
+            var response = await sendEditUserRequest('tokens', lines);
+            $('#tokens-count').text(response.message);
+            showNotification("Токены проверены.");
+            return;
+    }
+    var response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            "Authorization": auth_token,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(lines)
+    });
+
+    if (!response.ok) {
+        showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+        return;
+    }
+
+    switch (editorTarget) {
+        case 'filter':
+            showNotification("Фильтр успешно обновлен.");
+            break;
+    }
+
+    cancelEditor();
 }
 
 $(document).ready(function () {
@@ -488,7 +574,6 @@ $(document).ready(function () {
             users[selectedUser.id].email = selectedUser.email;
         }
     });
-
     $('#user-username + button').on('click', async function () {
         if (await editUserEditable('#user-username', 'username')) {
             selectedUser.username = $('#user-username').text();
@@ -496,7 +581,6 @@ $(document).ready(function () {
             $('#users > div > button[disabled]').text(selectedUser.username);
         }
     });
-
     $('#password + button').on('click', function () {
         editUserEditable('#password', 'password');
         selectedUserInfo.password = $('#password').text();
@@ -507,28 +591,19 @@ $(document).ready(function () {
             $(this).find('+ button').click();
         }
     })
-    $('#checkbox').on('click', function () {
-        var isChecked = this.checked;
-        sendEditUserRequest('admin', isChecked);
-        selectedUserInfo.admin = isChecked;
+    $('#admin-btn').on('click', async function () {
+        var value = !selectedUserInfo.admin;
+        await sendEditUserRequest('admin', value);
+        selectedUserInfo.admin = value;
+        $("#admin-btn").text(value ? "Снять админку" : "Выдать админку");
     });
-    $('#upload-tokens').on('click', function () {
-        setupFileInput($('#fileInput'), uploadTokens);
+    $('#pause-btn').on('click', async function () {
+        var value = !selectedUserInfo.paused;
+        await sendEditUserRequest('paused', value);
+        selectedUserInfo.paused = value;
+        $('#pause-btn').text(value ? "Снять паузу" : "Поставить на паузу");
     });
-
-    $('#upload-proxies').on('click', function () {
-        setupFileInput($('#fileInput'), uploadProxies);
-    });
-
-    $('#download-tokens').on('click', function () {
-        downloadTokens();
-    });
-
-    $('#download-proxies').on('click', function () {
-        downloadProxies();
-    });
-
-    $('.delete-account-button').on('click', async function () {
+    $('#delete-user-btn').on('click', async function () {
         const auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
 
         try {
@@ -558,6 +633,94 @@ $(document).ready(function () {
         } catch (error) {
             showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
         }
+    });
+    chatLogsButton.addEventListener('click', async function () {
+        updateUnderline(chatLogsButton);
+        chatLogsButton.classList.add('button-active');
+        chatLogsButton.disabled = true;
+        actionsLogsButton.classList.remove('button-active');
+        actionsLogsButton.disabled = false;
+        getLogs(0);
+    });
+    actionsLogsButton.addEventListener('click', async function () {
+        updateUnderline(actionsLogsButton);
+        actionsLogsButton.classList.add('button-active');
+        actionsLogsButton.disabled = true;
+        chatLogsButton.classList.remove('button-active');
+        chatLogsButton.disabled = false;
+        getLogs(1);
+    });
+    $('.menu-item .toggleButton').click(function (event) {
+        event.stopPropagation();
+
+        var $clickedMenuItem = $(this).closest('.menu-item');
+        var $dropdownContent = $clickedMenuItem.find('.dropdown-content');
+
+        $('.menu-item').not($clickedMenuItem).find('.dropdown-content').hide();
+
+        $dropdownContent.toggle();
+    });
+    $(document).on('click', function (event) {
+        var $dropdownContents = $('.dropdown-content');
+        var $clickedMenuItem = $(event.target).closest('.menu-item');
+
+        if (!$dropdownContents.is(event.target) && $dropdownContents.has(event.target).length === 0 &&
+            !$clickedMenuItem.length) {
+            $dropdownContents.hide();
+        }
+    });
+    $('.menu-item .dropdown-content button').click(function () {
+        $(this).closest('.dropdown-content').hide();
+    });
+    $('#upload-filter').on('click', function () {
+        setupFileInput($('#fileInput'), uploadFilterWords);
+    });
+    $('#download-filter').on('click', function () {
+        downloadFilterWords();
+    });
+    $('#cancel-editor-btn').on('click', function () {
+        cancelEditor();
+    });
+    $('#edit-filter').on('click', async function () {
+        var auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+        var response = await fetch('api/admin/getfilter', {
+            method: 'GET',
+            headers: {
+                "Authorization": auth_token
+            }
+        });
+
+        if (!response.ok) {
+            showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+            return;
+        }
+
+        var data = await response.json();
+        showEditor('filter', data);
+    });
+    $('#save-editor-btn').on('click', saveEditor);
+    $('#edit-tokens').on('click', async function () {
+        var auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+        var response = await fetch('api/admin/gettokens?id=' + selectedUser.id, {
+            method: 'GET',
+            headers: {
+                "Authorization": auth_token
+            }
+        });
+
+        if (!response.ok) {
+            showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+            return;
+        }
+
+        var data = await response.json();
+        showEditor('tokens', data);
+    });
+    $('#upload-tokens').on('click', function () {
+        setupFileInput($('#fileInput'), uploadTokens);
+    });
+    $('#download-tokens').on('click', function () {
+        downloadTokens();
     });
 });
 

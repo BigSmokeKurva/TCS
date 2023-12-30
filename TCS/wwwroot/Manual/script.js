@@ -89,22 +89,28 @@ $(document).ready(function () {
         $('.m_full-width-input').val(lastMessage);
     });
 
-    $('.send-button').on('click', function () {
+    $('.send-button').on('click', async function () {
+        if (isSending) {
+            return;
+        }
+        isSending = true;
         if (isRandom) {
             nextBtn();
         }
         var bot = $('#bots-list #bots [class="item selected-item"]');
         if (bot.length === 0) {
+            isSending = false;
             return;
         }
         var botname = bot.attr('botname');
         var message = $('.m_full-width-input').val();
         if (message.replace(/\s/g, '').length === 0) {
             showNotification("Для отправки, введите сообщение.");
+            isSending = false;
             return;
         }
         const auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
-        fetch('api/app/sendmessage', {
+        var response = await fetch('api/app/sendmessage', {
             method: 'POST',
             headers: {
                 "Authorization": auth_token,
@@ -114,25 +120,22 @@ $(document).ready(function () {
                 botname: botname,
                 message: message
             })
-        })
-            .then(response => {
-                if (!response.ok) {
-                    throw Error();
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.status === "error") {
-                    showNotification(data.message);
-                } else {
-                    lastMessage = $('.m_full-width-input').val();
-                    $('.m_full-width-input').val('');
-                }
-            })
-            .catch(error => {
-                showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
-            });
+        });
 
+        if (!response.ok) {
+            showNotification("Произошла ошибка отправки. Попробуйте позже");
+            isSending = false;
+            return;
+        }
+        var data = await response.json();
+        if (data.status === "error") {
+            showNotification(data.message);
+            isSending = false;
+            return;
+        }
+        lastMessage = $('.m_full-width-input').val();
+        $('.m_full-width-input').val('');
+        isSending = false;
     });
 
     $('.b_binds button').on('click', sendMessage);

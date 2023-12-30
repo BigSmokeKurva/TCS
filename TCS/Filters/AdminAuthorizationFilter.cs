@@ -30,6 +30,11 @@ namespace TCS.Filters
                 }
                 return;
             }
+            if (await db.Users.Where(x => db.Sessions.Any(y => y.Id == x.Id && y.AuthToken == auth_token_uid)).Select(x => x.Paused).FirstAsync())
+            {
+                context.Result = new RedirectToPageResult("/Paused");
+                return;
+            }
             if (!await db.Users.Where(x => x.Id == db.Sessions.First(y => y.AuthToken == auth_token_uid).Id).Select(x => x.Admin).FirstAsync())
             {
                 context.Result = new RedirectToPageResult("/App");

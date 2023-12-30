@@ -9,7 +9,7 @@ namespace TCS.Controllers.Models
         Email = 2,
         Admin = 3,
         Tokens = 4,
-        Proxies = 5
+        Paused = 5
     }
 
     public class EditUserModel

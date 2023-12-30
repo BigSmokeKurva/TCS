@@ -26,7 +26,6 @@
 
     .s_textarea::-webkit-scrollbar-thumb {
         background-color: rgb(118, 104, 203);
-        /*border: 2px solid rgb(46, 47, 51);*/
         border-radius: 2px;
     }
 
@@ -60,7 +59,7 @@
 
 #s_count-bots {
     color:white;
-    margin-top: 40px;
+    margin-right:20px;
 }
 
 #s_delay {
@@ -85,6 +84,104 @@ input[type="number"]{
     margin-right:12px;
 }
 
+.s_custom-select {
+    width: 200px;
+    margin-top:6px;
+}
+
+.s_selected-option {
+    border: none;
+    background-color: rgb(63, 66, 70);
+    height: 42px;
+}
+
+    .s_selected-option > span {
+        color: rgb(192,192,194);
+        justify-self: left;
+        padding: 0 10px;
+        overflow: hidden;
+        width: -webkit-fill-available;
+        width: -moz-available;
+        text-overflow: ellipsis;
+    }
+
+.s_options {
+    color: rgb(192,192,194);
+    background-color: rgb(45, 45, 50);
+    border: none;
+    top:42px;
+}
+
+.s_options_area > div > span {
+    color: rgb(192,192,194);
+    font-size: 18px;
+}
+
+.s_options_content {
+    grid-row: span 2;
+    margin-top: 28.74px;
+    margin-left: 20px;
+}
+
+    .s_options_content .s_custom-select {
+        margin: 0;
+    }
+
+    .s_options_content > div {
+        background-color: rgb(45,45,50);
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+        border-radius: 4px;
+    }
+
+        .s_options_content > div > div {
+            display: flex;
+            flex-direction: column;
+            width: fit-content;
+        }
+
+            .s_options_content > div > div > span {
+                color: rgb(192,192,194);
+                font-size: 18px;
+                margin-bottom: 8px;
+            }
+
+    .s_options_content input {
+        width: 200px;
+        height: 42px;
+        font-size: 18px;
+        background-color: rgb(63, 66, 70);
+        border-radius: 4px;
+        border: none;
+        padding: 0 10px;
+        color: rgb(192,192,194);
+        outline: none;
+    }
+
+    .s_options_content button {
+        height: 42px;
+        background-color: transparent;
+        border: 2px solid rgb(176,162,252);
+        color: rgb(176,162,252);
+        font-size: 18px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .s_options_content .s_options {
+        height: 16vh;
+    }
+
+.inline-div{
+    display:flex;
+    margin-top:40px;
+}
+
+.inline-div > div:nth-child(2){
+    color: white;
+}
+
 @media (max-width: 768px) {
     .s_container div{
         justify-self:center;
@@ -96,5 +193,14 @@ input[type="number"]{
 
     .s_textarea{
         height:50vh;
+    }
+
+    .inline-div{
+        flex-direction:column-reverse;
+    }
+
+    #s_count-bots{
+        margin-right:0;
+        margin-top:20px;
     }
 }

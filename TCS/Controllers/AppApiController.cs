@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Collections.Frozen;
 using TCS.BotsManager;
 using TCS.Controllers.Models;
 using TCS.Database;
 using TCS.Filters;
+using TCS.Follow;
 
 namespace TCS.Controllers
 {
@@ -19,7 +21,6 @@ namespace TCS.Controllers
         [Route("updateStreamerUsername")]
         public async Task<ActionResult> UpdateStreamerUsername(string username)
         {
-            // TODO не работает
             if (!UserValidators.ValidateStreamerUsername(username))
             {
                 var data = new
@@ -46,8 +47,10 @@ namespace TCS.Controllers
                     message = ""
                 });
             }
-            await db.AddLog(user, $"Обновил ник стримера на {username}.");
+            await FollowBot.RemoveAllFromQueue(x => x.Id == user.Id);
+            await db.AddLog(user, $"Обновил ник стримера на {username}.", Database.Models.LogType.Action);
             await db.SaveChangesAsync();
+            FollowBot.Queue.RemoveAll(x => x.Id == user.Id);
             return Ok(new
             {
                 status = "ok"
@@ -61,7 +64,7 @@ namespace TCS.Controllers
 
             var auth_token = Guid.Parse(Request.Headers.Authorization);
             var user = await db.GetUser(auth_token);
-            var bots = user.Configuration.Tokens.Values.ToFrozenDictionary(x => x, x => Manager.IsConnected(user.Id, x));
+            var bots = user.Configuration.Tokens.Select(x => x.Username).ToFrozenDictionary(x => x, x => Manager.IsConnected(user.Id, x));
             return Ok(bots);
         }
 
@@ -73,7 +76,11 @@ namespace TCS.Controllers
             var auth_token = Guid.Parse(Request.Headers.Authorization);
             var id = await db.GetId(auth_token);
             Manager.UpdateTimer(id, db);
-            return Ok("pong");
+            return Ok(new
+            {
+                status = "ok",
+                message = "pong"
+            });
         }
 
         [HttpPost]
@@ -95,7 +102,7 @@ namespace TCS.Controllers
                     message = "Ошибка подключения."
                 });
             }
-            await db.AddLog(id, $"Подключил бота {model.BotUsername}.");
+            await db.AddLog(id, $"Подключил бота {model.BotUsername}.", Database.Models.LogType.Action);
             await db.SaveChangesAsync();
             return Ok(new
             {
@@ -122,7 +129,7 @@ namespace TCS.Controllers
                     message = ""
                 });
             }
-            await db.AddLog(id, $"Отключил бота {model.BotUsername}.");
+            await db.AddLog(id, $"Отключил бота {model.BotUsername}.", Database.Models.LogType.Action);
             await db.SaveChangesAsync();
             return Ok(new
             {
@@ -149,7 +156,7 @@ namespace TCS.Controllers
                     message = ""
                 });
             }
-            await db.AddLog(id, $"Подключил всех ботов.");
+            await db.AddLog(id, $"Подключил всех ботов.", Database.Models.LogType.Action);
             await db.SaveChangesAsync();
             return Ok(new
             {
@@ -176,7 +183,7 @@ namespace TCS.Controllers
                     message = ""
                 });
             }
-            await db.AddLog(id, $"Отключил всех ботов.");
+            await db.AddLog(id, $"Отключил всех ботов.", Database.Models.LogType.Action);
             await db.SaveChangesAsync();
             return Ok(new
             {
@@ -207,12 +214,20 @@ namespace TCS.Controllers
                     message = "Сообщение слишком длинное."
                 });
             }
+            if (await db.CheckMessageFilter(model.Message))
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "Сообщение содержит запрещенные слова."
+                });
+            }
             try
             {
                 var r = await Manager.Send(id, model.BotName, model.Message, db);
                 if (r)
                 {
-                    await db.AddLog(id, $"Отправил сообщение {model.Message}.");
+                    await db.AddLog(id, $"Отправил сообщение {model.Message}.", Database.Models.LogType.Chat);
                     await db.SaveChangesAsync();
                     return Ok(new
                     {
@@ -266,11 +281,19 @@ namespace TCS.Controllers
                 });
             }
             model.Messages = model.Messages.Select(x => x.Trim()).Where(x => !(string.IsNullOrEmpty(x) || string.IsNullOrWhiteSpace(x) || x.Length > 49)).ToArray();
+            if (await db.CheckMessageFilter(model.Messages))
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "Сообщение содержит запрещенные слова."
+                });
+            }
             var configuration = await db.Configurations.FindAsync(id);
             configuration.SpamThreads = model.Threads;
             configuration.SpamDelay = model.Delay;
             configuration.SpamMessages = [.. model.Messages];
-            await db.AddLog(id, $"Обновил конфигурацию спама.");
+            await db.AddLog(id, $"Обновил конфигурацию спама.", Database.Models.LogType.Action);
             await db.SaveChangesAsync();
             return Ok(new
             {
@@ -303,12 +326,28 @@ namespace TCS.Controllers
                 return Ok(new
                 {
                     status = "error",
-                    message = "Количество потоков не может быть больше 50."
+                    message = $"Количество {(model.Mode == SpamMode.Random ? "потоков" : "ботов")} не может быть больше 50."
+                });
+            }
+            if (Manager.users[id].bots.Count < model.Threads)
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = $"Количество {(model.Mode == SpamMode.Random ? "потоков" : "ботов")} не может быть больше количества подключенных ботов."
                 });
             }
             model.Messages = model.Messages.Select(x => x.Trim()).Where(x => !(string.IsNullOrEmpty(x) || string.IsNullOrWhiteSpace(x))).ToArray();
-            await Manager.StartSpam(id, model.Threads, model.Delay, model.Messages, db);
-            await db.AddLog(id, $"Запустил спам.");
+            if (await db.CheckMessageFilter(model.Messages))
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "Сообщение содержит запрещенные слова."
+                });
+            }
+            await Manager.StartSpam(id, model.Threads, model.Delay, model.Messages, model.Mode, db);
+            await db.AddLog(id, $"Запустил спам.", Database.Models.LogType.Action);
             await db.SaveChangesAsync();
             return Ok(new
             {
@@ -327,7 +366,7 @@ namespace TCS.Controllers
             {
                 await Manager.StopSpam(id, db);
             }
-            await db.AddLog(id, $"Остановил спам.");
+            await db.AddLog(id, $"Остановил спам.", Database.Models.LogType.Action);
             await db.SaveChangesAsync();
             return Ok(new
             {
@@ -371,7 +410,7 @@ namespace TCS.Controllers
             //user.Configuration.Id = user.Id;
             user.Configuration.Binds.Add(model.Name, [.. model.Messages]);
             db.Entry(user.Configuration).Property(x => x.Binds).IsModified = true;
-            await db.AddLog(user, $"Добавил бинд {model.Name}.");
+            await db.AddLog(user, $"Добавил бинд {model.Name}.", Database.Models.LogType.Action);
             await db.SaveChangesAsync();
             return Ok(new
             {
@@ -433,7 +472,7 @@ namespace TCS.Controllers
                 //user.Configuration.Id = user.Id;
                 user.Configuration.Binds[model.Name] = [.. model.Messages];
                 db.Entry(user.Configuration).Property(x => x.Binds).IsModified = true;
-                await db.AddLog(user, $"Обновил бинд {model.Name}.");
+                await db.AddLog(user, $"Обновил бинд {model.Name}.", Database.Models.LogType.Action);
                 await db.SaveChangesAsync();
                 return Ok(new
                 {
@@ -454,7 +493,7 @@ namespace TCS.Controllers
             user.Configuration.Binds.Remove(model.OldName);
             user.Configuration.Binds.Add(model.Name, [.. model.Messages]);
             db.Entry(user.Configuration).Property(x => x.Binds).IsModified = true;
-            await db.AddLog(user, $"Обновил бинд {model.OldName} -> {model.Name}.");
+            await db.AddLog(user, $"Обновил бинд {model.OldName} -> {model.Name}.", Database.Models.LogType.Action);
             await db.SaveChangesAsync();
             return Ok(new
             {
@@ -474,7 +513,7 @@ namespace TCS.Controllers
             if (configuration.Binds.Remove(bindName))
             {
                 db.Entry(configuration).Property(x => x.Binds).IsModified = true;
-                await db.AddLog(configuration.Id, $"Удалил бинд {bindName}.");
+                await db.AddLog(configuration.Id, $"Удалил бинд {bindName}.", Database.Models.LogType.Action);
                 await db.SaveChangesAsync();
                 return Ok(new
                 {
@@ -512,14 +551,258 @@ namespace TCS.Controllers
                 });
             }
             var message = messages[rnd.Next(0, messages.Count)];
+            if (await db.CheckMessageFilter(message))
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "Сообщение содержит запрещенные слова."
+                });
+            }
             await Manager.Send(configuration.Id, model.botname, message, db);
-            await db.AddLog(configuration.Id, $"Отправил сообщение {message} из бинда {model.bindname}.");
+            await db.AddLog(configuration.Id, $"Отправил сообщение {message} из бинда {model.bindname}.", Database.Models.LogType.Chat);
             await db.SaveChangesAsync();
             return Ok(new
             {
                 status = "ok"
             });
+        }
 
+        [HttpGet]
+        [Route("getFollowBots")]
+        public async Task<ActionResult> GetFollowBots()
+        {
+            var auth_token = Guid.Parse(Request.Headers.Authorization);
+            var configuration = await db.GetConfiguration(auth_token);
+            var followedUsernames = configuration.Tokens.Where(x => db.Tokens.Any(y => y.Username == x.Username && y.Followed.Contains(configuration.StreamerUsername))).Select(x => x.Username);
+            var inQueueTokens = await FollowBot.IsInQueue(configuration.Tokens.Select(x => x.Token), configuration.Id);
+            return Ok(configuration.Tokens.ToDictionary(x => x.Username, x =>
+            {
+                if (inQueueTokens.Contains(x.Token))
+                {
+                    return "waiting";
+                }
+                if (followedUsernames.Contains(x.Username))
+                {
+                    return "followed";
+                }
+                return "not-followed";
+            }));
+        }
+
+        [HttpGet]
+        [Route("followBot")]
+        public async Task<ActionResult> FollowBot_(string botname)
+        {
+
+            var auth_token = Guid.Parse(Request.Headers.Authorization);
+            var user = await db.GetUser(auth_token);
+            var token = user.Configuration.Tokens.FirstOrDefault(x => x.Username == botname);
+            if (token is null)
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "Бот не найден."
+                });
+            }
+            if (await FollowBot.IsInQueue(token.Token, user.Id))
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "Бот уже в очереди."
+                });
+            }
+
+            var item = new Item
+            {
+                Id = user.Id,
+                Username = token.Username,
+                Token = token.Token,
+                TargetId = await FollowBot.GetChannelId(user.Configuration.StreamerUsername),
+                Channel = user.Configuration.StreamerUsername,
+                Action = Actions.Follow,
+                Date = TimeHelper.GetMoscowTime(),
+                Proxy = token.Proxy
+            };
+            await FollowBot.AddToQueue(item);
+            await db.AddLog(user, $"Добавил бота {botname} в очередь на follow.", Database.Models.LogType.Action);
+            await db.SaveChangesAsync();
+            return Ok(new
+            {
+                status = "ok"
+            });
+        }
+
+        [HttpGet]
+        [Route("unfollowBot")]
+        public async Task<ActionResult> UnfollowBot(string botname)
+        {
+
+            var auth_token = Guid.Parse(Request.Headers.Authorization);
+            var user = await db.GetUser(auth_token);
+            var token = user.Configuration.Tokens.FirstOrDefault(x => x.Username == botname);
+            if (token is null)
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "Бот не найден."
+                });
+            }
+            if (await FollowBot.IsInQueue(token.Token, user.Id))
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "Бот уже в очереди."
+                });
+            }
+            var item = new Item
+            {
+                Id = user.Id,
+                Username = token.Username,
+                Token = token.Token,
+                TargetId = await FollowBot.GetChannelId(user.Configuration.StreamerUsername),
+                Channel = user.Configuration.StreamerUsername,
+                Action = Actions.Unfollow,
+                Date = TimeHelper.GetMoscowTime(),
+                Proxy = token.Proxy
+            };
+            await FollowBot.AddToQueue(item);
+            await db.AddLog(user, $"Добавил бота {botname} в очередь на unfollow.", Database.Models.LogType.Action);
+            await db.SaveChangesAsync();
+            return Ok(new
+            {
+                status = "ok"
+            });
+        }
+
+        [HttpGet]
+        [Route("followBotCancel")]
+        public async Task<ActionResult> FollowBotCancel(string botname)
+        {
+
+            var auth_token = Guid.Parse(Request.Headers.Authorization);
+            var user = await db.GetUser(auth_token);
+            var token = user.Configuration.Tokens.FirstOrDefault(x => x.Username == botname);
+            if (token is null)
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "Бот не найден."
+                });
+            }
+            await FollowBot.RemoveFromQueue(token.Username, user.Id);
+            await db.AddLog(user, $"Убрал из очереди бота {botname}.", Database.Models.LogType.Action);
+            await db.SaveChangesAsync();
+
+            return Ok(new
+            {
+                status = "ok",
+                message = (await db.Tokens.Where(x => x.Username == botname).Select(x => x.Followed).FirstAsync()).Any(x => x.Contains(user.Configuration.StreamerUsername)) ?
+                "followed" : "not-followed"
+            });
+        }
+
+        [HttpPost]
+        [Route("followAllBots")]
+        public async Task<ActionResult> FollowAllBots([FromBody] FollowAllBotsModel model)
+        {
+
+            var auth_token = Guid.Parse(Request.Headers.Authorization);
+            var user = await db.GetUser(auth_token);
+            var tokens = user.Configuration.Tokens.Select(x => x.Token);
+            var channelId = await FollowBot.GetChannelId(user.Configuration.StreamerUsername);
+            var inQueueTokens = await FollowBot.IsInQueue(tokens, user.Id);
+            var followedTokens = await db.Tokens.Where(x => x.Followed.Contains(user.Configuration.StreamerUsername)).Select(x => x.Token).ToListAsync();
+            var items = new List<Item>();
+            var num = 1;
+            foreach (var token in tokens)
+            {
+                if (inQueueTokens.Contains(token) || followedTokens.Contains(token))
+                {
+                    continue;
+                }
+                items.Add(new Item
+                {
+                    Id = user.Id,
+                    Username = token,
+                    Token = token,
+                    TargetId = channelId,
+                    Channel = user.Configuration.StreamerUsername,
+                    Action = Actions.Follow,
+                    Date = TimeHelper.GetMoscowTime().AddSeconds(model.Delay * num),
+                    Proxy = user.Configuration.Tokens.First(y => y.Token == token).Proxy
+                });
+                num++;
+            }
+            await FollowBot.AddToQueue(items);
+            await db.AddLog(user, $"Добавил всех ботов в очередь на follow.", Database.Models.LogType.Action);
+            await db.SaveChangesAsync();
+            return Ok(new
+            {
+                status = "ok"
+            });
+        }
+
+        [HttpPost]
+        [Route("unfollowAllBots")]
+        public async Task<ActionResult> UnfollowAllBots([FromBody] FollowAllBotsModel model)
+        {
+
+            var auth_token = Guid.Parse(Request.Headers.Authorization);
+            var user = await db.GetUser(auth_token);
+            var tokens = user.Configuration.Tokens.Select(x => x.Token);
+            var channelId = await FollowBot.GetChannelId(user.Configuration.StreamerUsername);
+            var inQueueTokens = await FollowBot.IsInQueue(tokens, user.Id);
+            var followedTokens = await db.Tokens.Where(x => x.Followed.Contains(user.Configuration.StreamerUsername)).Select(x => x.Token).ToListAsync();
+            var items = new List<Item>();
+            var num = 1;
+            foreach (var token in tokens)
+            {
+                if (inQueueTokens.Contains(token) || !followedTokens.Contains(token))
+                {
+                    continue;
+                }
+                items.Add(new Item
+                {
+                    Id = user.Id,
+                    Username = token,
+                    Token = token,
+                    TargetId = channelId,
+                    Channel = user.Configuration.StreamerUsername,
+                    Action = Actions.Unfollow,
+                    Date = TimeHelper.GetMoscowTime().AddSeconds(model.Delay * num),
+                    Proxy = user.Configuration.Tokens.First(y => y.Token == token).Proxy
+                });
+                num++;
+            }
+            await FollowBot.AddToQueue(items);
+            await db.AddLog(user, $"Добавил всех ботов в очередь на unfollow.", Database.Models.LogType.Action);
+            await db.SaveChangesAsync();
+            return Ok(new
+            {
+                status = "ok"
+            });
+        }
+
+        [HttpGet]
+        [Route("followAllBotsCancel")]
+        public async Task<ActionResult> FollowAllBotsCancel()
+        {
+
+            var auth_token = Guid.Parse(Request.Headers.Authorization);
+            var user = await db.GetUser(auth_token);
+            await FollowBot.RemoveAllFromQueue(x => x.Id == user.Id);
+            await db.AddLog(user, $"Убрал всех ботов из очереди followbot.", Database.Models.LogType.Action);
+            await db.SaveChangesAsync();
+            return Ok(new
+            {
+                status = "ok",
+            });
         }
     }
 }

@@ -19,10 +19,28 @@
 <link rel="stylesheet" href="~/Spam/style.css" />
 <div class="s_container">
     <textarea class="s_textarea">@string.Join('\n', spamConfiguration.Messages)</textarea>
-    <div id="s_count-bots">
-        Потоки
-        <br />
-        <input type="number" class="s_number-input" max="50" step="1" value="@spamConfiguration.Threads">
+    <div class="inline-div">
+        <div id="s_count-bots">
+            <span></span>
+            <br />
+            <input type="number" class="s_number-input" max="50" step="1" value="@spamConfiguration.Threads">
+        </div>
+        <div>
+            Режим работы
+            <div class="custom-select s_custom-select" id="s_option_select">
+                <div class="selected-option s_selected-option">
+                    <span></span>
+                    <div>
+                        <img class="triangle-close" src="~/AdminPanel/triangle.svg" alt="" />
+                    </div>
+                </div>
+                <ul class="options s_options">
+                    <li id="s_random-btn">Случайный</li>
+                    <li id="s_list-btn">По списку</li>
+                </ul>
+            </div>
+
+        </div>
     </div>
     <div id="s_delay">
         Задержка в секундах

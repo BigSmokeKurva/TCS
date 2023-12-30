@@ -11,6 +11,8 @@ const history = [];
 var historyIndex = 0;
 var isRandom = false;
 var lastMessage = "";
+var isSending = false;
+var windowTarget = null;
 
 function scrollBotList() {
     var targetElement = document.getElementById('bots'); // Получите контейнер по его ID
@@ -178,7 +180,7 @@ async function loadContent(partialViewName) {
 
 function validateStreamLogin(login) {
     var loginPattern = /^[a-zA-Z0-9_-]+$/;
-    var isValidLength = login.length >= 4 && login.length <= 16; // Минимальное и максимальное количество символов
+    var isValidLength = login.length >= 4 && login.length <= 30; // Минимальное и максимальное количество символов
     var isValidPattern = loginPattern.test(login);
 
     if (isValidLength && isValidPattern) {
@@ -257,7 +259,7 @@ function pingPong() {
     });
 }
 
-async function toggleBot() {
+async function toggleConnectBot() {
     if (!avalibleMasClick) {
         return;
     }
@@ -287,7 +289,7 @@ async function toggleBot() {
 
             if (data.status === "ok") {
                 $div.attr('state', 'disconnected');
-                const $img = $div.find('img');
+                const $img = $div.find('.connect-bot img');
                 $img.attr('src', '/App/connect_bot.svg');
                 return;
             }
@@ -313,7 +315,7 @@ async function toggleBot() {
 
             if (data.status === "ok") {
                 $div.attr('state', 'connected');
-                const $img = $div.find('img');
+                const $img = $div.find('.connect-bot img');
                 $img.attr('src', '/App/disconnect_bot.svg');
                 return;
             }
@@ -345,7 +347,7 @@ function connectAllBots() {
 
             if (data.status === "ok") {
                 var $botsContainer = $('#bots');
-                $botsContainer.find('img').attr('src', '/App/disconnect_bot.svg');
+                $botsContainer.find('button.connect-bot img').attr('src', '/App/disconnect_bot.svg');
                 fetch("/api/app/getBots", {
                     method: "GET",
                     headers: {
@@ -364,11 +366,8 @@ function connectAllBots() {
                             let value = data[key];
                             $div = $botsContainer.find('div[botname="' + key + '"]');
                             $div.attr('state', (value ? 'connected' : 'disconnected'));
-                            $img = $div.find('img');
-                            $img.attr({
-                                src: value ? '/App/disconnect_bot.svg' : '/App/connect_bot.svg',
-                                alt: ''
-                            });
+                            $img = $div.find('button.connect-bot img');
+                            $img.attr('src', value ? '/App/disconnect_bot.svg' : '/App/connect_bot.svg');
                         });
                     })
                     .catch(error => {
@@ -407,7 +406,7 @@ function disconnectAllBots() {
             if (data.status === "ok") {
                 var $botsContainer = $('#bots');
                 $botsContainer.find('div[botname]').attr('state', 'disconnected');
-                $botsContainer.find('img').attr('src', '/App/connect_bot.svg');
+                $botsContainer.find('button.connect-bot img').attr('src', '/App/connect_bot.svg');
                 showNotification("Все боты успешно отключены.");
                 return;
             }
@@ -418,6 +417,202 @@ function disconnectAllBots() {
         });
 }
 
+async function getFollowStat() {
+    var auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+    var response = await fetch("/api/app/getFollowBots", {
+        method: "GET",
+        headers: {
+            "Authorization": auth_token
+        }
+    });
+    if (!response.ok) {
+        return;
+    }
+    var data = await response.json();
+    Object.keys(data).forEach(function (key) {
+        var value = data[key];
+        var $div = $('#bots div[botname="' + key + '"]');
+        if ($div.attr('followstate') === value) {
+            return;
+        }
+        $div.attr('followstate', value);
+        if (value === "followed") {
+            $div.find('.follow-bot img').attr('src', '/App/unfollow.svg');
+        }
+        else if (value === 'not-followed') {
+            $div.find('.follow-bot img').attr('src', '/App/follow.svg');
+        } else {
+            $div.find('.follow-bot img').attr('src', '/App/followbot_waiting.svg');
+        }
+    });
+}
+
+async function toggleFollowBot() {
+    const $div = $(this.parentNode);
+    var auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+    var botname = $div.attr('botname');
+    // Follow
+    if ($div.attr('followstate') === 'not-followed') {
+        var response = await fetch("/api/app/followBot?botname=" + botname, {
+            method: "GET",
+            headers: {
+                "Authorization": auth_token,
+                'Content-Type': 'application/json',
+            }
+        });
+        if (!response.ok) {
+            showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+            return;
+        }
+        var data = await response.json();
+        if (data.status === "error") {
+            showNotification(data.message);
+            return;
+        }
+        $div.attr('followstate', 'waiting');
+        $div.find('.follow-bot img').attr('src', '/App/followbot_waiting.svg');
+    }
+    else if ($div.attr('followstate') === 'followed') {
+        var response = await fetch("/api/app/unfollowBot?botname=" + botname, {
+            method: "GET",
+            headers: {
+                "Authorization": auth_token,
+                'Content-Type': 'application/json',
+            }
+        });
+        if (!response.ok) {
+            showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+            return;
+        }
+        var data = await response.json();
+        if (data.status === "error") {
+            showNotification(data.message);
+            return;
+        }
+        $div.attr('followstate', 'waiting');
+        $div.find('.follow-bot img').attr('src', '/App/followbot_waiting.svg');
+    }
+    else {
+        var response = await fetch("/api/app/followBotCancel?botname=" + botname, {
+            method: "GET",
+            headers: {
+                "Authorization": auth_token,
+                'Content-Type': 'application/json',
+            }
+        });
+        if (!response.ok) {
+            showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+            return;
+        }
+        var data = await response.json();
+        if (data.status === "error") {
+            showNotification(data.message);
+            return;
+        }
+        if (data.message === "followed") {
+            $div.attr('followstate', 'followed');
+            $div.find('.follow-bot img').attr('src', '/App/unfollow.svg');
+            return;
+        }
+        $div.attr('followstate', 'not-followed');
+        $div.find('.follow-bot img').attr('src', '/App/follow.svg');
+    }
+}
+
+function cancelWindow() {
+    $('#window-container, .overlay').fadeOut(50);
+    windowTarget = null;
+    $(document).focus();
+    $('body').css('overflow', '');
+}
+
+function showWindow(target) {
+    $('#window-body > input').attr('value', '0');
+    $('#window-container, .overlay').fadeIn(50);
+    $('#window-body > input').focus();
+    windowTarget = target;
+    $('body').css('overflow', 'hidden');
+}
+
+
+async function followAllBots() {
+    var delay = $('#window-body > input').val();
+    if (!delay) {
+        return;
+    }
+    var auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+    var response = await fetch("/api/app/followAllBots", {
+        method: "POST",
+        headers: {
+            "Authorization": auth_token,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            delay: parseInt(delay)
+        })
+    });
+    if (!response.ok) {
+        showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+        return;
+    }
+    var data = await response.json();
+    if (data.status === "error") {
+        showNotification(data.message);
+        return;
+    }
+    await getFollowStat();
+    showNotification('Все доступные боты были поставлены в очередь на follow.');
+}
+
+async function unfollowAllBots() {
+    var delay = $('#window-body > input').val();
+    if (!delay) {
+        return;
+    }
+    var auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+    var response = await fetch("/api/app/unfollowAllBots", {
+        method: "POST",
+        headers: {
+            "Authorization": auth_token,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            delay: parseInt(delay)
+        })
+    });
+    if (!response.ok) {
+        showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+        return;
+    }
+    var data = await response.json();
+    if (data.status === "error") {
+        showNotification(data.message);
+        return;
+    }
+    await getFollowStat();
+    showNotification('Все доступные боты были поставлены в очередь на unfollow.');
+}
+
+async function followAllBotsCancel() {
+    var auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+    var response = await fetch("/api/app/followAllBotsCancel", {
+        method: "GET",
+        headers: {
+            "Authorization": auth_token,
+            'Content-Type': 'application/json',
+        }
+    });
+    if (!response.ok) {
+        showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+        return;
+    }
+    var data = await response.json();
+    if (data.status === "error") {
+        showNotification(data.message);
+        return;
+    }
+    await getFollowStat();
+}
 
 $(document).ready(function () {
     spamButton.addEventListener('click', async function () {
@@ -562,6 +757,14 @@ $(document).ready(function () {
             }
         } catch { }
 
+        try {
+            var $optionSelectedOption = $('#s_option_select > div');
+            var $optionOptions = $('#s_option_select > ul');
+            if (!$(event.target).is($optionSelectedOption) && !$.contains($optionOptions[0], event.target) && $optionOptions.is(':visible')) {
+                toggleSpamModeMenu();
+            }
+        } catch { }
+
     });
     $('#mas-connect').on('click', function () {
         toggleMass();
@@ -581,11 +784,39 @@ $(document).ready(function () {
         avalibleMasClick = false;
         disconnectAllBots();
     });
+    $('#mas-cancelfollow').on('click', function () {
+        toggleMass();
+
+        if ($('#bots div[followstate="waiting"]').length == 0) {
+            return;
+        }
+        followAllBotsCancel();
+    });
+    $('#mas-follow').on('click', function () {
+        toggleMass();
+
+        if ($('#bots div[followstate="not-followed"]').length == 0) {
+            return;
+        }
+        $('#window-body > span').text('Задержка между follow');
+        showWindow('follow');
+
+    });
+    $('#mas-unfollow').on('click', function () {
+        toggleMass();
+
+        if ($('#bots div[followstate="followed"]').length == 0) {
+            return;
+        }
+        $('#window-body > span').text('Задержка между unfollow');
+        showWindow('unfollow');
+    });
 
     pingPong();
     onlineStreamerCheck();
     setInterval(onlineStreamerCheck, 10000);
     setInterval(pingPong, 10000);
+    setInterval(getFollowStat, 10000);
     manualButton.click();
     //getBots();
     let items = $('#bots-list #bots div[botname]');
@@ -605,11 +836,25 @@ $(document).ready(function () {
             historyIndex++;
         }
     });
-    items.find('button').on('click', toggleBot);
+    items.find('button.connect-bot').on('click', toggleConnectBot);
+    items.find('button.follow-bot').on('click', toggleFollowBot);
     items.first().click();
+
 
 
     $('#next-btn').on('click', nextBtn);
     $('#prev-btn').on('click', prevBtn);
     $('#random-btn').on('click', randomBtn);
+    $('#cancel-window-btn').on('click', function () {
+        cancelWindow();
+    });
+    $('#save-window-btn').on('click', async function () {
+        if (windowTarget === 'follow') {
+            await followAllBots();
+        } else {
+            await unfollowAllBots();
+        }
+        cancelWindow();
+
+    });
 });

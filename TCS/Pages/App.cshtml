@@ -4,13 +4,13 @@
 @using TCS.Database
 @using Microsoft.EntityFrameworkCore
 @using TCS.BotsManager
+@using TCS.Follow
 @{
     int id;
     string username;
     int count_tokens;
     string streamerUsername;
     bool isAdmin;
-    List<string> bots;
     Dictionary<string, bool> botsData;
     var auth_token = Guid.Parse(Request.Cookies["auth_token"]);
     var user = await Model.db.GetUser(auth_token);
@@ -19,8 +19,9 @@
     count_tokens = user.Configuration.Tokens.Count;
     streamerUsername = user.Configuration.StreamerUsername;
     isAdmin = user.Admin;
-    bots = user.Configuration.Tokens.Values.ToList();
-    botsData = bots.ToDictionary(x => x, x => Manager.IsConnected(id, x));
+    var bots = user.Configuration.Tokens.Select(x => x.Username);
+    var connectedBots = bots.Where(x => Manager.IsConnected(id, x)).ToList();
+    var followedBots = await Model.db.Tokens.Where(x => bots.Contains(x.Username) && x.Followed.Contains(streamerUsername)).ToListAsync();
 }
 
 <html>
@@ -31,6 +32,21 @@
 </head>
 <body>
     <main>
+        <div id="window-container">
+            <div id="window">
+                <div id="window-body">
+                    <span>Задержка между подписками</span>
+                    <input type="number" class="number-input" max="500" step="1" value="0">
+                </div>
+                <div class="window-underline"></div>
+                <div id="window-buttons">
+                    <button id="save-window-btn">Запустить</button>
+                    <button id="cancel-window-btn">Отмена</button>
+                </div>
+            </div>
+        </div>
+        <div class="overlay"></div>
+
         <div id="main_grid">
             <span id="title">RBTChat</span>
             <div class="user-panel">
@@ -80,19 +96,48 @@
                         <ul class="options" id="func-list">
                             <li id="mas-connect">подключить</li>
                             <li id="mas-disconnect">отключить</li>
+                            <li id="mas-follow">follow</li>
+                            <li id="mas-unfollow">unfollow</li>
+                            <li id="mas-cancelfollow">follow cancel</li>
                         </ul>
                     </div>
                     <div class="background_line"></div>
                     <div id="list-container">
                         <div class="list" id="bots">
-                            @foreach (var bot in botsData)
-                            {
-                                <div class="item" botname="@bot.Key" state="@(bot.Value ? "connected" : "disconnected")">
-                                    <span>@bot.Key</span>
-                                    <button>
-                                        <img src="@(bot.Value ? "/App/disconnect_bot.svg" : "/App/connect_bot.svg")" alt="">
-                                    </button>
-                                </div>
+                            @{
+                                var configuration = await Model.db.Configurations.FindAsync(id);
+                                var followedUsernames = configuration.Tokens.Where(x => Model.db.Tokens.Any(y => y.Username == x.Username && y.Followed.Contains(configuration.StreamerUsername))).Select(x => x.Username);
+                                var inQueueUsernames = await FollowBot.IsInQueue(configuration.Tokens.Select(x => x.Token), configuration.Id, true);
+                                foreach (var bot in bots)
+                                {
+                                    string followState;
+                                     if (inQueueUsernames.Contains(bot))
+                                    {
+                                        followState = "waiting";
+                                    }
+                                    else if (followedUsernames.Contains(bot))
+                                    {
+                                        followState = "followed";
+                                    }
+                                    else
+                                    {
+                                        followState = "not-followed";
+                                    }
+                                    bool isConnected = connectedBots.Contains(bot);
+                                    <div class="item" botname="@bot" state="@(isConnected ? "connected" : "disconnected")" followstate="@followState">
+                                        <span>@bot</span>
+                                        <button class="follow-bot">
+                                            <img src="@(followState switch{
+                                            "followed" => "/App/unfollow.svg",
+                                            "waiting" => "/App/followbot_waiting.svg",
+                                            "not-followed" => "/App/follow.svg",
+                                            })" alt="">
+                                        </button>
+                                        <button class="connect-bot">
+                                            <img src="@(isConnected ? "/App/disconnect_bot.svg" : "/App/connect_bot.svg")" alt="">
+                                        </button>
+                                    </div>
+                                }
                             }
                         </div>
                     </div>

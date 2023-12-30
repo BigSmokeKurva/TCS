@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using TCS.Controllers.Models;
 using TCS.Database;
 
 namespace TCS.BotsManager
@@ -8,6 +9,7 @@ namespace TCS.BotsManager
         public int id { get; set; } = id;
         private string streamerUsername = streamerUsername;
         public Dictionary<string, Bot> bots = new();
+        public SpamMode spamMode = SpamMode.Random;
         private Task task = null;
         private List<Task> spamTasks = new();
         private CancellationTokenSource spamCancellationToken = null;
@@ -41,12 +43,12 @@ namespace TCS.BotsManager
                 var db = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
                 if (spamTasks.Any())
                 {
-                    await db.AddLog(id, "Остановил спам. (Бездействие)");
+                    await db.AddLog(id, "Остановил спам. (Бездействие)", Database.Models.LogType.Action);
                     await StopSpam();
                 }
                 if (bots.Any())
                 {
-                    await db.AddLog(id, "Отключил всех ботов. (Бездействие)");
+                    await db.AddLog(id, "Отключил всех ботов. (Бездействие)", Database.Models.LogType.Action);
                     await Parallel.ForEachAsync(bots, new ParallelOptions() { MaxDegreeOfParallelism = DisconnectThreads }, async (bot, e) =>
                     {
                         try
@@ -75,12 +77,12 @@ namespace TCS.BotsManager
                 return;
             }
             var configuration = await db.Configurations.FindAsync(id);
-            if (!configuration.Tokens.ContainsValue(botname))
+            if (!configuration.Tokens.Any(x => x.Username == botname))
             {
                 throw new Exception("Токен не найден.");
             }
-            var token = configuration.Tokens.First(x => x.Value == botname).Key;
-            var bot = new Bot(botname, token, streamerUsername, configuration.Proxies[rnd.Next(0, configuration.Proxies.Count)]);
+            var token = configuration.Tokens.First(x => x.Username == botname);
+            var bot = new Bot(botname, token.Token, streamerUsername, token.Proxy);
             await bot.Connect();
             bots.Add(botname, bot);
         }
@@ -101,17 +103,16 @@ namespace TCS.BotsManager
             var bots = configuration.Tokens;
             if (bots.Count == this.bots.Count)
                 return;
-            var proxies = configuration.Proxies;
             ConcurrentDictionary<string, Bot> keyValuePairs = new();
             await Parallel.ForEachAsync(bots, new ParallelOptions() { MaxDegreeOfParallelism = ConnectThreads }, async (bot, e) =>
             {
                 try
                 {
-                    if (this.bots.ContainsKey(bot.Value))
+                    if (this.bots.ContainsKey(bot.Username))
                         return;
-                    var _bot = new Bot(bot.Value, bot.Key, streamerUsername, proxies[rnd.Next(0, proxies.Count)]);
+                    var _bot = new Bot(bot.Username, bot.Token, streamerUsername, bot.Proxy);
                     await _bot.Connect();
-                    keyValuePairs.TryAdd(bot.Value, _bot);
+                    keyValuePairs.TryAdd(bot.Username, _bot);
                 }
                 catch
                 {
@@ -162,19 +163,26 @@ namespace TCS.BotsManager
             spamTasks.Clear();
             spamCancellationToken = null;
         }
-        internal async Task StartSpam(int threads, int delay, string[] messages)
+        internal async Task StartSpam(int threads, int delay, string[] messages, SpamMode mode)
         {
             spamCancellationToken = new();
-            for (int i = 0; i < threads; i++)
+            spamMode = mode;
+            if (mode == SpamMode.Random)
             {
-                spamTasks.Add(SpamThread(delay, messages));
+                for (int i = 0; i < threads; i++)
+                {
+                    spamTasks.Add(SpamThread(delay, messages));
+                }
             }
-
+            else
+            {
+                spamTasks.Add(SpamThreadModeList(bots.Values.Take(threads).ToArray(), delay, [.. messages]));
+            }
         }
         internal async Task SpamThread(int delay, string[] messages)
         {
             delay *= 1000;
-            while (!spamCancellationToken.IsCancellationRequested)
+            while (spamCancellationToken is not null && !spamCancellationToken.IsCancellationRequested)
             {
                 if (!bots.Any())
                 {
@@ -192,6 +200,30 @@ namespace TCS.BotsManager
                 }
                 catch { }
             }
+        }
+        internal async Task SpamThreadModeList(Bot[] bots, int delay, List<string> messages)
+        {
+            delay *= 1000;
+            while (spamCancellationToken is not null && !spamCancellationToken.IsCancellationRequested && messages.Any())
+            {
+                foreach (var bot in bots)
+                {
+                    try
+                    {
+                        await bot.Send(messages.First(), spamCancellationToken);
+                        messages.RemoveAt(0);
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        return;
+                    }
+                    catch { }
+                    await Task.Delay(delay, spamCancellationToken.Token);
+                }
+            }
+            spamCancellationToken?.Dispose();
+            spamTasks.Clear();
+            spamCancellationToken = null;
         }
         internal async Task ChangeStreamerUsername(string streamerUsername)
         {
@@ -212,12 +244,12 @@ namespace TCS.BotsManager
 
             if (SpamStarted())
             {
-                await db.AddLog(id, "Остановил спам. (Бездействие)");
+                await db.AddLog(id, "Остановил спам. (Бездействие)", Database.Models.LogType.Action);
                 await StopSpam();
             }
             if (bots.Any())
             {
-                await db.AddLog(id, "Отключил всех ботов. (Бездействие)");
+                await db.AddLog(id, "Отключил всех ботов. (Бездействие)", Database.Models.LogType.Action);
                 await DisconnectAllBots();
             }
             await db.SaveChangesAsync();

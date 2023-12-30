@@ -16,6 +16,21 @@
 </head>
 <body>
     <main>
+        <div id="editor-container">
+            <div id="editor">
+                <div id="editor-title">
+                    Редактор
+                </div>
+                <div class="editor-underline"></div>
+                <textarea id="editor-textarea"></textarea>
+                <div class="editor-underline"></div>
+                <div id="editor-buttons">
+                    <button id="save-editor-btn">Сохранить</button>
+                    <button id="cancel-editor-btn">Отмена</button>
+                </div>
+            </div>
+        </div>
+        <div class="overlay"></div>
         <div id="main_grid">
             <span id="title">RBTChat</span>
             <div class="user-panel">
@@ -33,6 +48,19 @@
             </div>
             <div class="grid-container">
                 <div>
+                    <div class="filter-row">
+                        Фильтр слов
+                        <div class="menu-item">
+                            <button class="toggleButton">
+                                <img src="~/AdminPanel/menu.svg" alt="menu" />
+                            </button>
+                            <div class="dropdown-content">
+                                <button id="upload-filter">Загрузить</button>
+                                <button id="download-filter">Выгрузить</button>
+                                <button id="edit-filter">Редактор</button>
+                            </div>
+                        </div>
+                    </div>
                     <div class="search">
                         <input type="text" placeholder="Поиск...">
                     </div>
@@ -61,41 +89,37 @@
                             </button>
                         </div>
                         <div class="info-row">
-                            Ник стримера: <span id="streamer-username"></span>
-                        </div>
-                        <div class="info-row">
                             Токены: <span id="tokens-count"></span>
-                            <button id="upload-tokens">
-                                <img src="~/AdminPanel/upload.svg" alt="Upload" />
-                            </button>
-                            <button id="download-tokens">
-                                <img src="~/AdminPanel/download.svg" alt="Download" />
-                            </button>
-                        </div>
-                        <div class="info-row">
-                            Прокси: <span id="proxies-count"></span>
-                            <button id="upload-proxies">
-                                <img src="~/AdminPanel/upload.svg" alt="Upload" />
-                            </button>
-                            <button id="download-proxies">
-                                <img src="~/AdminPanel/download.svg" alt="Download" />
-                            </button>
-                        </div>
-                        <div class="right-div-column info-row">
-                            <div>
-                                Админка
-                                <input type="checkbox" id="checkbox">
-                                <label for="checkbox"></label>
+                            <div class="menu-item">
+                                <button class="toggleButton">
+                                    <img src="~/AdminPanel/menu.svg" alt="menu" />
+                                </button>
+                                <div class="dropdown-content">
+                                    <button id="upload-tokens">Загрузить</button>
+                                    <button id="download-tokens">Выгрузить</button>
+                                    <button id="edit-tokens">Редактор</button>
+                                </div>
                             </div>
                         </div>
-                        <div class="right-div-column">
-                            <button class="delete-account-button">Удалить</button>
+                        <div class="right-div-column info-row" id="acc-actions">
+                            Действия с аккаунтом
+                            <div class="menu-item">
+                                <button class="toggleButton">
+                                    <img src="~/AdminPanel/menu1.svg" alt="menu" />
+                                </button>
+                                <div class="dropdown-content">
+                                    <button id="pause-btn"></button>
+                                    <button id="admin-btn"></button>
+                                    <button id="delete-user-btn">Удалить аккаунт</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="button-container logs_title">
-                        <button class="button" disabled>Логи</button>
+                        <button class="button" id="chat-logs">Логи чата</button>
+                        <button class="button" id="actions-logs">Логи действий</button>
                         <div class="background_underline underline"></div>
-                        <div class="underline"></div>
+                        <div class="underline" id="underline"></div>
                     </div>
                     <div class="custom-select" id="logs-select">
                         <div class="selected-option">

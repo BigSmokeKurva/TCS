@@ -29,6 +29,12 @@ namespace TCS.Filters
                 {
                     context.HttpContext.Response.Cookies.Delete(cookie);
                 }
+                return;
+            }
+            if (await db.Users.Where(x => db.Sessions.Any(y => y.Id == x.Id && y.AuthToken == auth_token_uid)).Select(x => x.Paused).FirstAsync())
+            {
+                context.Result = new RedirectToPageResult("/Paused");
+                return;
             }
         }
     }

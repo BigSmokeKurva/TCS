@@ -1,0 +1,50 @@
+﻿@page
+@using Microsoft.EntityFrameworkCore
+@model TCS.Pages.PausedModel
+@{
+    string username;
+    var auth_token = Guid.Parse(Request.Cookies["auth_token"]);
+    username = await Model.db.Users.Where(x => Model.db.Sessions.Any(y => y.AuthToken == auth_token && x.Id == y.Id)).Select(x => x.Username).FirstAsync();
+}
+<html>
+<head>
+    <link rel="stylesheet" href="~/Paused/style.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>RBTChat</title>
+</head>
+<body>
+    <div id="header">
+        <div id="username">
+            <span>@username</span>
+        </div>
+        <button id="exit-button">ВЫЙТИ</button>
+    </div>
+    <div id="message">
+        <h1>Приостановлено</h1>
+        <p>Ваш аккаунт был поставлен на паузу.</p>
+        @* <p>Пожалуйста, попробуйте ещё раз позже.</p> *@
+        <p>Напишите администратору.</p>
+    </div>
+    <script>
+        document.getElementById("exit-button").addEventListener("click", () => {
+            fetch("/api/auth/unauthorization", {
+                method: "GET"
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw Error();
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === "ok") {
+                        window.location.href = "/";
+                    }
+                })
+                .catch(error => {
+                    // Обработка ошибки
+                });
+        });
+    </script>
+</body>
+</html>

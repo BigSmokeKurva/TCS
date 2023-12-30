@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using TCS.Controllers.Models;
 using TCS.Database;
 
 namespace TCS.BotsManager
@@ -116,7 +117,7 @@ namespace TCS.BotsManager
             }
             await user.StopSpam();
         }
-        public static async Task StartSpam(int id, int threads, int delay, string[] messages, DatabaseContext db)
+        public static async Task StartSpam(int id, int threads, int delay, string[] messages, SpamMode mode, DatabaseContext db)
         {
             if (!users.TryGetValue(id, out var user))
             {
@@ -125,10 +126,10 @@ namespace TCS.BotsManager
                 users.Add(id, new User(id, streamerUsername));
                 user = users[id];
                 user.UpdateTimer();
-                await user.StartSpam(threads, delay, messages);
+                await user.StartSpam(threads, delay, messages, mode);
                 return;
             }
-            await user.StartSpam(threads, delay, messages);
+            await user.StartSpam(threads, delay, messages, mode);
         }
         public static async Task ChangeStreamerUsername(int id, string streamerUsername)
         {

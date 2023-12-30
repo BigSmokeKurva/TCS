@@ -93,6 +93,21 @@ main {
     margin-top: 23px;
 }
 
+    .button-container.logs_title button {
+        cursor: pointer;
+        font-family: Inter-Regular;
+        color: rgb(192,192,194);
+    }
+
+        .button-container.logs_title button:hover {
+            color: rgb(255, 255, 255);
+        }
+
+        .button-container.logs_title button.button-active {
+            color: rgb(255, 255, 255);
+            font-family: Inter-SemiBold;
+        }
+
 .button {
     font-family: Inter-SemiBold;
     margin: 0 12px;
@@ -129,10 +144,6 @@ main {
     margin: 26px 0 0 0;
 }
 
-    .logs_title .underline:nth-child(3) {
-        width: 74.42px;
-    }
-
 .grid-container {
     display: grid;
     grid-template-columns: auto 1fr;
@@ -144,7 +155,7 @@ main {
     .grid-container > div:nth-child(1) {
         overflow: hidden;
         display: grid;
-        grid-template-rows: auto 1fr;
+        grid-template-rows: auto auto 1fr;
     }
 
 #list-container {
@@ -236,7 +247,7 @@ main {
     grid-column-gap: 10px;
     grid-auto-flow: column;
     padding: 0 33px;
-    margin-top:20px;
+    margin-top: 20px;
 }
 
 .info-row {
@@ -295,49 +306,6 @@ main {
         align-items: flex-start;
         font-size: 18px;
         color: rgb(162,252,187);
-    }
-
-
-#checkbox {
-    display: none;
-}
-
-    #checkbox + label::before {
-        content: "";
-        display: flex;
-        width: 20px;
-        height: 20px;
-        border: 1px solid rgb(174, 174, 178);
-        border-radius: 4px;
-        justify-content: center;
-        align-items: center;
-        background-color: transparent;
-        transition: background-color 0.05s, border-color 0.05s;
-        margin-left: 10px;
-    }
-
-    #checkbox:checked + label::before {
-        content: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="15" height="11.25" viewBox="0 0 12 9" fill="none"><path d="M10.3333 1L3.91667 7.41667L1 4.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>');
-        background-color: rgb(118, 104, 203);
-        border: 1px solid rgb(118, 104, 203);
-    }
-
-.delete-account-button {
-    height: 35px;
-    background-color: rgb(118,104,203);
-    color: white;
-    font-size: 14px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-family: Inter-SemiBold;
-    padding: 0 20px;
-    width: 109.71px;
-    display: block;
-}
-
-    .delete-account-button:hover {
-        background-color: rgb(133,118,226);
     }
 
 .custom-select {
@@ -486,6 +454,22 @@ main {
         align-self: center;
     }
 
+.filter-row {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: white;
+    font-family: Inter-SemiBold;
+    font-size: 16px;
+    margin-top: 20px;
+}
+
+    .filter-row button {
+        height: 24px;
+        width: 24px;
+        margin-left: 8px;
+    }
+
 .notification {
     position: absolute;
     left: 50%;
@@ -524,4 +508,155 @@ main {
     width: 30px;
     height: 27px;
     margin-right: 10px;
+}
+
+.menu-item {
+    position: relative;
+}
+
+.toggleButton {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: rgb(63,66,70);
+    min-width: 160px;
+    z-index: 1;
+    border-radius: 4px;
+    margin-left: 8px;
+    margin-top: 5px;
+}
+
+    .dropdown-content button {
+        background: none;
+        border: none;
+        display: block;
+        width: 100%;
+        text-align: left;
+        text-decoration: none;
+        color: black;
+        cursor: pointer;
+        margin: 0;
+        height: 40px;
+        padding-left: 20px;
+        color: white;
+        border-radius: 4px;
+    }
+
+        .dropdown-content button:hover {
+            background-color: rgb(75,76,83);
+        }
+
+        .dropdown-content button:active {
+            background-color: rgb(148,138,207);
+        }
+
+#acc-actions {
+    grid-column: 3;
+}
+
+    #acc-actions .dropdown-content {
+        left: -136px;
+    }
+
+#editor-container {
+    display: none;
+    position: fixed;
+    z-index: 2;
+}
+
+#editor {
+    width: 45vw;
+    height: 82vh;
+    background-color: rgb(63,66,70);
+    display: grid;
+    grid-template-rows: auto auto 1fr auto auto;
+}
+
+    #editor > #editor-title {
+        font-size: 18px;
+        margin: 24px 0 24px 20px;
+        color: white;
+    }
+
+    #editor > .editor-underline {
+        height: 2px;
+        width: 100%;
+        background-color: rgb(45,45,50);
+    }
+
+    #editor #editor-textarea {
+        outline: none;
+        background-color: transparent;
+        color: white;
+        height: 100%;
+        width: 100%;
+        padding: 10px;
+        resize: none;
+        border: none;
+        font-size: 18px;
+        scrollbar-width: thin; /* Для Firefox */
+        scrollbar-color: rgb(174, 160, 248) rgb(46, 47, 51); /* Для Firefox */
+    }
+
+        #editor #editor-textarea::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #editor #editor-textarea::-webkit-scrollbar-thumb {
+            background-color: rgb(118, 104, 203);
+            border-radius: 2px;
+        }
+
+        #editor #editor-textarea::-webkit-scrollbar-track {
+            background-color: transparent;
+        }
+
+    #editor #save-editor-btn {
+        background-color: rgb(118,104,203);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        height: 40px;
+        width: 119px;
+        justify-content: center;
+        align-items: center;
+        margin: 8px;
+        cursor: pointer;
+    }
+
+    #editor #cancel-editor-btn {
+        background-color: transparent;
+        color: white;
+        height: 40px;
+        width: 119px;
+        margin-right: 24px;
+        border-radius: 4px;
+        border: none;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+    }
+
+        #editor #cancel-editor-btn:hover {
+            background-color: rgb(75,76,83);
+        }
+
+.overlay {
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display:none;
 }

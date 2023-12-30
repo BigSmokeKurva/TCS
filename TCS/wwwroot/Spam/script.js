@@ -32,7 +32,8 @@ function toggleSpam() {
         var data = {
             threads: parseInt($('#s_count-bots > input').val()),
             delay: parseInt($('#s_delay > input').val()),
-            messages: $('.s_textarea').val().split('\n')
+            messages: $('.s_textarea').val().split('\n'),
+            mode: $('#s_random-btn').hasClass('selected') ? 0 : 1
         };
         fetch("/api/app/startSpam", {
             method: "Post",
@@ -61,6 +62,22 @@ function toggleSpam() {
             });
 
     }
+}
+
+function toggleSpamModeMenu() {
+    var $optionSelectedOption = $('#s_option_select > div');
+    var $optionOptions = $('#s_option_select > ul');
+    $optionOptions.is(':visible') ? $optionOptions.fadeOut(100) : $optionOptions.fadeIn(100);
+    $optionSelectedOption.toggleClass('selected-option-active');
+    $optionSelectedOption.find('div > img').toggleClass('triangle-open triangle-close');
+}
+
+function setOption(btn) {
+    var parent = btn.parent();
+    $('.s_options_content > div').hide();
+    parent.find('li.selected').removeClass('selected');
+    btn.addClass('selected');
+    $('#s_option_select > div > span').text(btn.text());
 }
 
 $(document).ready(function () {
@@ -124,4 +141,21 @@ $(document).ready(function () {
             });
     });
     $('#s_start-stop').on('click', toggleSpam);
+    $('#s_option_select > div').on('click', function (e) {
+        e.stopPropagation();
+        toggleSpamModeMenu();
+    });
+    $('#s_random-btn').on('click', function () {
+        $('#s_count-bots > span').text('Потоки');
+        toggleSpamModeMenu();
+        setOption($(this));
+    });
+    $('#s_list-btn').on('click', function () {
+        $('#s_count-bots > span').text('Боты');
+        toggleSpamModeMenu();
+        setOption($(this));
+    });
+    setOption($('#s_random-btn'));
+    $('#s_count-bots > span').text('Потоки');
+
 });

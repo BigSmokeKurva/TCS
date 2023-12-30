@@ -1,0 +1,45 @@
+﻿@font-face {
+    font-family: "Inter-Regular";
+    src: url("../fonts/Inter-Regular.ttf");
+}
+
+body {
+    background-color: rgb(33, 33, 38);
+    color: white;
+    font-family: "Inter-Regular";
+}
+
+#message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+#username {
+    background-color: rgb(45, 45, 50);
+    font-size: 14px;
+    height: 44px;
+    padding: 0 29px;
+    font-family: Inter-SemiBold;
+    color: rgb(162, 252, 187);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 4px;
+}
+
+#exit-button {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    color: rgb(192, 192, 194);
+    padding-left: 12px;
+}
+
+#header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 30px;
+}

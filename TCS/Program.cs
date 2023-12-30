@@ -4,6 +4,7 @@ using Npgsql;
 using TCS.BotsManager;
 using TCS.Database;
 using TCS.Filters;
+using TCS.Follow;
 
 namespace TCS
 {
@@ -13,6 +14,9 @@ namespace TCS
 
         public static async Task Main(string[] args)
         {
+            // Настройка Playwright
+            ConfigurePlaywright();
+
             var builder = WebApplication.CreateBuilder(args);
 
             // Настройка источника данных PostgreSQL
@@ -43,11 +47,19 @@ namespace TCS
             User.ConnectThreads = app.Configuration.GetSection("App").GetValue<int>("ConnectThreads");
             User.DisconnectThreads = app.Configuration.GetSection("App").GetValue<int>("DisconnectThreads");
             TokenCheck.Threads = app.Configuration.GetSection("TokenCheck").GetValue<int>("Threads");
+            FollowBot.Threads = app.Configuration.GetSection("FollowBot").GetValue<int>("Threads");
+
+            // FollowBot
+            FollowBot.StartPolling();
 
             // Запуск приложения
             await app.RunAsync();
         }
-
+        private static void ConfigurePlaywright()
+        {
+            Microsoft.Playwright.Program.Main(new string[] { "install", "chromium" });
+            Console.Clear();
+        }
         private static void ConfigurePostgresDataSource(IConfiguration configuration)
         {
             var connectionStringBuilder = new NpgsqlConnectionStringBuilder

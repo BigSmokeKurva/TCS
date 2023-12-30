@@ -60,7 +60,8 @@ namespace TCS.Controllers
                    new()
                    {
                        Time = TimeHelper.GetMoscowTime(),
-                       Message = "Зарегистрировался."
+                       Message = "Зарегистрировался.",
+                       Type = Database.Models.LogType.Action
                    }
                ]
             });
@@ -114,7 +115,7 @@ namespace TCS.Controllers
                 Id = user.Id,
                 Expires = TimeHelper.GetMoscowTime().AddDays(30)
             });
-            await db.AddLog(user, "Авторизовался.");
+            await db.AddLog(user, "Авторизовался.", Database.Models.LogType.Action);
             await db.SaveChangesAsync();
 
             var cookieOptions = new CookieOptions
@@ -143,7 +144,7 @@ namespace TCS.Controllers
             if (!await db.Sessions.AnyAsync(x => x.AuthToken == auth_token))
                 return Ok(new { status = "ok" });
             db.Sessions.Remove(await db.Sessions.FindAsync(auth_token));
-            await db.AddLog(await db.Users.FirstAsync(x => x.Sessions.Any(y => y.AuthToken == auth_token && x.Id == y.Id)), "Вышел из аккаунта.");
+            await db.AddLog(await db.Users.FirstAsync(x => x.Sessions.Any(y => y.AuthToken == auth_token && x.Id == y.Id)), "Вышел из аккаунта.", Database.Models.LogType.Action);
             await db.SaveChangesAsync();
             // Удаляем все cookie на сайте
             foreach (var cookie in Request.Cookies.Keys)
