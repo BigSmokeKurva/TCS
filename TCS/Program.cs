@@ -76,7 +76,7 @@ namespace TCS
                 .Build();
 
             // ¬ключение устаревшего поведени€ временных меток дл€ Npgsql
-            AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+            //AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
         }
 
         private static void ConfigureLogging(WebApplicationBuilder builder)

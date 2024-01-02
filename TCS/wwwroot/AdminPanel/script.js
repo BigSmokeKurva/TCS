@@ -93,44 +93,40 @@ async function getInfoForSelectedUser() {
     }
 }
 
-function getLogs(type) {
+async function getLogs(type) {
     var selectedTime = $logsSelectedOption.find('span').text();
     var auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
 
-    fetch('api/admin/getlogs?id=' + selectedUser.id + '&time=' + selectedTime + '&type=' + type, {
+    var response = await fetch('api/admin/getlogs?id=' + selectedUser.id + '&time=' + selectedTime + '&type=' + type, {
         method: 'GET',
         headers: {
             "Authorization": auth_token
         }
-    })
-        .then(response => {
-            if (!response.ok) {
-                throw Error();
-            }
-            return response.json();
-        })
-        .then(logs => {
-            var logsContainer = $("#logs > div > div.list.list-logs");
-            logsContainer.empty();
+    });
 
-            logs.forEach(log => {
-                var logTime = new Date(log.time);
-                var formattedTime = logTime.toLocaleTimeString();
+    if (!response.ok) {
+        showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+    }
 
-                var logDiv = $("<div>").addClass("logs_line");
-                var timeSpan = $("<span>").text(formattedTime);
-                var messageSpan = $("<span>").text(log.message);
+    var data = await response.json();
+    var logsContainer = $("#logs > div > div.list.list-logs");
+    logsContainer.empty();
 
-                logDiv.append(timeSpan, messageSpan);
-                logsContainer.append(logDiv);
+    data.forEach(log => {
+        var logTime = new Date(log.time);
+        var formattedTime = logTime.toLocaleTimeString();
 
-                var underlineDiv = $("<div>").addClass("logs_underline");
-                logsContainer.append(underlineDiv);
-            });
-        })
-        .catch(error => {
-            showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
-        });
+        var logDiv = $("<div>").addClass("logs_line");
+        var timeSpan = $("<span>").text(formattedTime);
+        var messageSpan = $("<span>").text(log.message);
+
+        logDiv.append(timeSpan, messageSpan);
+        logsContainer.append(logDiv);
+
+        var underlineDiv = $("<div>").addClass("logs_underline");
+        logsContainer.append(underlineDiv);
+    });
+
 }
 
 async function selectUser(button) {
@@ -161,7 +157,7 @@ async function selectUser(button) {
     logsTimeList.append(liElements);
 
     // Создаем jQuery-коллекцию из массива элементов и добавляем обработчик событий
-    logsTimeList.on('click', 'li', function () {
+    logsTimeList.on('click', 'li', async function () {
         logsTimeList.find('li.selected').removeClass('selected');
         $(this).addClass('selected');
         $logsSelectedOption.find('span').text($(this).text());
@@ -171,7 +167,7 @@ async function selectUser(button) {
         else if (actionsLogsButton.classList.contains('button-active'))
             var type = 1;
 
-        getLogs(type);
+        await getLogs(type);
     });
 
     // Выбираем первый элемент и обновляем отображение
@@ -204,7 +200,10 @@ function getUsers() {
             data.forEach(user => {
                 var btn = $('<button>', { user_id: user.id }).text(user.username).on('click', async function () {
                     await selectUser(this);
-                    chatLogsButton.click();
+                    if (chatLogsButton.disabled !== true) {
+                        chatLogsButton.click();
+                    }
+                    await getLogs(0);
                 });
                 users[user.id] = user;
 
@@ -640,7 +639,7 @@ $(document).ready(function () {
         chatLogsButton.disabled = true;
         actionsLogsButton.classList.remove('button-active');
         actionsLogsButton.disabled = false;
-        getLogs(0);
+        await getLogs(0);
     });
     actionsLogsButton.addEventListener('click', async function () {
         updateUnderline(actionsLogsButton);
@@ -648,7 +647,7 @@ $(document).ready(function () {
         actionsLogsButton.disabled = true;
         chatLogsButton.classList.remove('button-active');
         chatLogsButton.disabled = false;
-        getLogs(1);
+        await getLogs(1);
     });
     $('.menu-item .toggleButton').click(function (event) {
         event.stopPropagation();

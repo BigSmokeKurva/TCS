@@ -52,14 +52,14 @@ namespace TCS.Controllers
                 Sessions = [
                    new()
                    {
-                       Expires = TimeHelper.GetMoscowTime().AddDays(30),
+                       Expires = TimeHelper.GetUnspecifiedUtc().AddDays(30),
                    }
                ],
                 Configuration = new(),
                 Logs = [
                    new()
                    {
-                       Time = TimeHelper.GetMoscowTime(),
+                       Time = DateTime.SpecifyKind(TimeHelper.GetUnspecifiedUtc(), DateTimeKind.Unspecified),
                        Message = "Зарегистрировался.",
                        Type = Database.Models.LogType.Action
                    }
@@ -73,7 +73,7 @@ namespace TCS.Controllers
 
                 Secure = true,
                 SameSite = SameSiteMode.Strict,
-                Expires = TimeHelper.GetMoscowTime().AddDays(30)
+                Expires = TimeHelper.GetUnspecifiedUtc().AddDays(30)
             };
             Response.Cookies.Append("auth_token", user.Entity.Sessions.First().AuthToken.ToString(), cookieOptions);
             // редирект на главную страницу
@@ -113,7 +113,7 @@ namespace TCS.Controllers
             var auth_token = await db.Sessions.AddAsync(new()
             {
                 Id = user.Id,
-                Expires = TimeHelper.GetMoscowTime().AddDays(30)
+                Expires = TimeHelper.GetUnspecifiedUtc().AddDays(30)
             });
             await db.AddLog(user, "Авторизовался.", Database.Models.LogType.Action);
             await db.SaveChangesAsync();
@@ -123,7 +123,7 @@ namespace TCS.Controllers
                 HttpOnly = false,
                 Secure = true,
                 SameSite = SameSiteMode.Strict,
-                Expires = TimeHelper.GetMoscowTime().AddDays(30),
+                Expires = TimeHelper.GetUnspecifiedUtc().AddDays(30),
                 Path = "/"
             };
             Response.Cookies.Append("auth_token", auth_token.Entity.AuthToken.ToString(), cookieOptions);

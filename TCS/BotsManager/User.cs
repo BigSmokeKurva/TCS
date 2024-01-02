@@ -70,7 +70,6 @@ namespace TCS.BotsManager
         }
         internal async Task ConnectBot(string botname, DatabaseContext db)
         {
-
             UpdateTimer();
             if (bots.ContainsKey(botname))
             {

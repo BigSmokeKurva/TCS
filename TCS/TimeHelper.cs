@@ -3,10 +3,13 @@
     public static class TimeHelper
     {
         private static readonly TimeZoneInfo MoscowTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Moscow");
-
-        public static DateTime GetMoscowTime()
+        public static DateTime ToMoscow(DateTime dateTime)
         {
-            return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, MoscowTimeZone);
+            return TimeZoneInfo.ConvertTimeFromUtc(dateTime, MoscowTimeZone);
+        }
+        public static DateTime GetUnspecifiedUtc()
+        {
+            return DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
         }
     }
 }

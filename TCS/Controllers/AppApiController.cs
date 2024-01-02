@@ -75,7 +75,7 @@ namespace TCS.Controllers
 
             var auth_token = Guid.Parse(Request.Headers.Authorization);
             var id = await db.GetId(auth_token);
-            Manager.UpdateTimer(id, db);
+            await Manager.UpdateTimer(id, db);
             return Ok(new
             {
                 status = "ok",
@@ -550,6 +550,7 @@ namespace TCS.Controllers
                     message = "Бот не подключен."
                 });
             }
+
             var message = messages[rnd.Next(0, messages.Count)];
             if (await db.CheckMessageFilter(message))
             {
@@ -574,7 +575,7 @@ namespace TCS.Controllers
         {
             var auth_token = Guid.Parse(Request.Headers.Authorization);
             var configuration = await db.GetConfiguration(auth_token);
-            var followedUsernames = configuration.Tokens.Where(x => db.Tokens.Any(y => y.Username == x.Username && y.Followed.Contains(configuration.StreamerUsername))).Select(x => x.Username);
+            var followedUsernames = configuration.Tokens.Where(x => db.Bots.Any(y => y.Username == x.Username && y.Followed.Contains(configuration.StreamerUsername))).Select(x => x.Username);
             var inQueueTokens = await FollowBot.IsInQueue(configuration.Tokens.Select(x => x.Token), configuration.Id);
             return Ok(configuration.Tokens.ToDictionary(x => x.Username, x =>
             {
@@ -623,7 +624,7 @@ namespace TCS.Controllers
                 TargetId = await FollowBot.GetChannelId(user.Configuration.StreamerUsername),
                 Channel = user.Configuration.StreamerUsername,
                 Action = Actions.Follow,
-                Date = TimeHelper.GetMoscowTime(),
+                Date = TimeHelper.GetUnspecifiedUtc(),
                 Proxy = token.Proxy
             };
             await FollowBot.AddToQueue(item);
@@ -667,7 +668,7 @@ namespace TCS.Controllers
                 TargetId = await FollowBot.GetChannelId(user.Configuration.StreamerUsername),
                 Channel = user.Configuration.StreamerUsername,
                 Action = Actions.Unfollow,
-                Date = TimeHelper.GetMoscowTime(),
+                Date = TimeHelper.GetUnspecifiedUtc(),
                 Proxy = token.Proxy
             };
             await FollowBot.AddToQueue(item);
@@ -702,7 +703,7 @@ namespace TCS.Controllers
             return Ok(new
             {
                 status = "ok",
-                message = (await db.Tokens.Where(x => x.Username == botname).Select(x => x.Followed).FirstAsync()).Any(x => x.Contains(user.Configuration.StreamerUsername)) ?
+                message = (await db.Bots.Where(x => x.Username == botname).Select(x => x.Followed).FirstAsync()).Any(x => x.Contains(user.Configuration.StreamerUsername)) ?
                 "followed" : "not-followed"
             });
         }
@@ -715,9 +716,11 @@ namespace TCS.Controllers
             var auth_token = Guid.Parse(Request.Headers.Authorization);
             var user = await db.GetUser(auth_token);
             var tokens = user.Configuration.Tokens.Select(x => x.Token);
+            var bots = user.Configuration.Tokens.Select(x => x.Username);
             var channelId = await FollowBot.GetChannelId(user.Configuration.StreamerUsername);
             var inQueueTokens = await FollowBot.IsInQueue(tokens, user.Id);
-            var followedTokens = await db.Tokens.Where(x => x.Followed.Contains(user.Configuration.StreamerUsername)).Select(x => x.Token).ToListAsync();
+            var followedTokens = (await db.Bots.Where(x => x.Followed.Contains(user.Configuration.StreamerUsername) && bots.Contains(x.Username)).Select(x => x.Username).ToListAsync())
+                .Select(x => user.Configuration.Tokens.First(y => x == y.Username).Token);
             var items = new List<Item>();
             var num = 1;
             foreach (var token in tokens)
@@ -729,12 +732,12 @@ namespace TCS.Controllers
                 items.Add(new Item
                 {
                     Id = user.Id,
-                    Username = token,
+                    Username = user.Configuration.Tokens.First(x => x.Token == token).Username,
                     Token = token,
                     TargetId = channelId,
                     Channel = user.Configuration.StreamerUsername,
                     Action = Actions.Follow,
-                    Date = TimeHelper.GetMoscowTime().AddSeconds(model.Delay * num),
+                    Date = TimeHelper.GetUnspecifiedUtc().AddSeconds(model.Delay * num),
                     Proxy = user.Configuration.Tokens.First(y => y.Token == token).Proxy
                 });
                 num++;
@@ -756,9 +759,11 @@ namespace TCS.Controllers
             var auth_token = Guid.Parse(Request.Headers.Authorization);
             var user = await db.GetUser(auth_token);
             var tokens = user.Configuration.Tokens.Select(x => x.Token);
+            var bots = user.Configuration.Tokens.Select(x => x.Username);
             var channelId = await FollowBot.GetChannelId(user.Configuration.StreamerUsername);
             var inQueueTokens = await FollowBot.IsInQueue(tokens, user.Id);
-            var followedTokens = await db.Tokens.Where(x => x.Followed.Contains(user.Configuration.StreamerUsername)).Select(x => x.Token).ToListAsync();
+            var followedTokens = (await db.Bots.Where(x => x.Followed.Contains(user.Configuration.StreamerUsername) && bots.Contains(x.Username)).Select(x => x.Username).ToListAsync())
+                .Select(x => user.Configuration.Tokens.First(y => x == y.Username).Token);
             var items = new List<Item>();
             var num = 1;
             foreach (var token in tokens)
@@ -770,12 +775,12 @@ namespace TCS.Controllers
                 items.Add(new Item
                 {
                     Id = user.Id,
-                    Username = token,
+                    Username = user.Configuration.Tokens.First(x => x.Token == token).Username,
                     Token = token,
                     TargetId = channelId,
                     Channel = user.Configuration.StreamerUsername,
                     Action = Actions.Unfollow,
-                    Date = TimeHelper.GetMoscowTime().AddSeconds(model.Delay * num),
+                    Date = TimeHelper.GetUnspecifiedUtc().AddSeconds(model.Delay * num),
                     Proxy = user.Configuration.Tokens.First(y => y.Token == token).Proxy
                 });
                 num++;

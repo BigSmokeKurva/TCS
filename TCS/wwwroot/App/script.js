@@ -705,7 +705,7 @@ $(document).ready(function () {
                         spam_btn.text('Начать');
                     }
                     $botsContainer.find('div[botname]').attr('state', 'disconnected');
-                    $botsContainer.find('img').attr('src', '/App/connect_bot.svg');
+                    $botsContainer.find('button.connect-bot img').attr('src', '/App/connect_bot.svg');
                 }
 
                 $('#status-streamerusername').text(text);

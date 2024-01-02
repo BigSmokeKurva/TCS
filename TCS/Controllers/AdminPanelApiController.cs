@@ -39,24 +39,21 @@ namespace TCS.Controllers
         [Route("getuserinfo")]
         public async Task<ActionResult> GetUserInfo(int id)
         {
-            var user = await db.Users.FindAsync(id);
+            var user = await db.Users.AsNoTracking().FirstAsync(x => x.Id == id);
 
-            var userInfo = await db.Users
-                .Where(u => u.Id == id)
-                .Select(u => new
-                {
-                    Admin = u.Admin,
-                    Password = u.Password,
-                    TokensCount = u.Configuration.Tokens.Count(),
-                    Paused = u.Paused,
-                    LogsTime = u.Logs
-                        .Select(l => l.Time.Date.ToString("dd.MM.yyyy"))
-                        .ToImmutableHashSet()
-                        .ToList()
-                })
-                .FirstAsync();
-            userInfo.LogsTime.Reverse();
-
+            var userInfo = new
+            {
+                Admin = user.Admin,
+                Password = user.Password,
+                TokensCount = await db.Configurations.AsNoTracking().Where(x => x.Id == id)
+                        .Select(x => x.Tokens.Count()).FirstAsync(),
+                Paused = user.Paused,
+                LogsTime = await db.Logs.AsNoTracking().Where(x => x.Id == id)
+                        .Select(l => l.Time.Date)
+                        .Distinct()
+                        .OrderByDescending(x => x)
+                        .Select(x => x.ToString("dd.MM.yyyy")).ToListAsync()
+            };
             return Ok(userInfo);
         }
 
@@ -66,15 +63,16 @@ namespace TCS.Controllers
         {
 
             var timeParsed = DateTime.ParseExact(time, "dd.MM.yyyy", System.Globalization.CultureInfo.InvariantCulture);
-            var logs = await db.Logs
+            timeParsed = DateTime.SpecifyKind(timeParsed, DateTimeKind.Unspecified);
+            //var time = 
+            var logs = (await db.Logs
                 .Where(x => x.Id == id && timeParsed.Date == x.Time.Date && x.Type == type)
                 .Select(x => new
                 {
                     x.Message,
-                    x.Time
+                    Time = TimeHelper.ToMoscow(x.Time)
                 })
-                .ToListAsync();
-            logs.Reverse();
+                .ToListAsync()).OrderByDescending(x => x.Time);
             return Ok(logs);
         }
 
@@ -219,11 +217,10 @@ namespace TCS.Controllers
                 Token = x,
                 Username = tokensChecked[x]
             }).ToList();
-            await db.Tokens.AddRangeAsync(tokensChecked.Select(x => new TokenInfo
+            await db.Bots.AddRangeAsync(tokensChecked.Select(x => new BotInfo
             {
-                Token = x.Key,
                 Username = x.Value
-            }).Where(x => !db.Tokens.Any(y => x.Token == y.Token)));
+            }).Where(x => !db.Bots.Any(y => x.Username == y.Username)));
             await db.SaveChangesAsync();
             return Ok(new
             {

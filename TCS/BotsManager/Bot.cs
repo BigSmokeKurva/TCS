@@ -16,7 +16,7 @@ namespace TCS.BotsManager
 
         public async Task Connect()
         {
-            connection?.Dispose();
+            await Disconnect();
             connection = new();
             connection.Options.Proxy = new WebProxy()
             {
@@ -38,7 +38,11 @@ namespace TCS.BotsManager
                 await connection.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
             }
             catch { }
-            connection.Dispose();
+            try
+            {
+                connection.Dispose();
+            }
+            catch { }
             connection = null;
         }
         public async Task Send(string message, CancellationTokenSource? ctoken = null)
@@ -50,7 +54,6 @@ namespace TCS.BotsManager
             }
             catch
             {
-                await Disconnect();
                 await Connect();
                 await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"PRIVMSG #{streamerUsername} :{message}")), WebSocketMessageType.Text, true, ctoken.Token);
             }

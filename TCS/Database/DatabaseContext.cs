@@ -10,7 +10,7 @@ namespace TCS.Database
         public DbSet<Log> Logs { get; set; }
         public DbSet<Models.Configuration> Configurations { get; set; }
         public DbSet<FilterWord> FilterWords { get; set; }
-        public DbSet<TokenInfo> Tokens { get; set; }
+        public DbSet<BotInfo> Bots { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -49,7 +49,7 @@ namespace TCS.Database
                 entity.HasKey(e => e.AuthToken);
                 entity.Property(e => e.AuthToken).HasColumnName("auth_token").HasDefaultValueSql("gen_random_uuid()");
                 entity.Property(e => e.Id).HasColumnName("id");
-                entity.Property(e => e.Expires).HasColumnName("expires");
+                entity.Property(e => e.Expires).HasColumnName("expires").HasColumnType("timestamp");
             });
 
             // Log
@@ -59,7 +59,7 @@ namespace TCS.Database
                 entity.Property(e => e.Id).HasColumnName("id");
                 entity.HasKey(e => e.LogId);
                 entity.Property(e => e.Message).HasColumnName("message");
-                entity.Property(e => e.Time).HasColumnName("time");
+                entity.Property(e => e.Time).HasColumnName("time").HasColumnType("timestamp");
             });
 
             // Configuration
@@ -85,12 +85,12 @@ namespace TCS.Database
             });
 
             // Tokens
-            modelBuilder.Entity<TokenInfo>(entity =>
+            modelBuilder.Entity<BotInfo>(entity =>
             {
-                entity.ToTable("tokens_info");
-                entity.HasKey(e => e.Token);
-                entity.HasAlternateKey(e => e.Username);
-                entity.Property(e => e.Token).HasColumnName("token");
+                entity.ToTable("bots_info");
+                entity.HasKey(e => e.Username);
+                //entity.HasAlternateKey(e => e.Username);
+                //entity.Property(e => e.Token).HasColumnName("token");
                 entity.Property(e => e.Username).HasColumnName("username");
                 entity.Property(e => e.Followed).HasColumnName("followed");
             });
@@ -101,7 +101,7 @@ namespace TCS.Database
             {
                 Id = id,
                 Message = message,
-                Time = TimeHelper.GetMoscowTime(),
+                Time = TimeHelper.GetUnspecifiedUtc(),
                 Type = type
             });
         }

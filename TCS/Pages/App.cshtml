@@ -21,7 +21,6 @@
     isAdmin = user.Admin;
     var bots = user.Configuration.Tokens.Select(x => x.Username);
     var connectedBots = bots.Where(x => Manager.IsConnected(id, x)).ToList();
-    var followedBots = await Model.db.Tokens.Where(x => bots.Contains(x.Username) && x.Followed.Contains(streamerUsername)).ToListAsync();
 }
 
 <html>
@@ -106,7 +105,7 @@
                         <div class="list" id="bots">
                             @{
                                 var configuration = await Model.db.Configurations.FindAsync(id);
-                                var followedUsernames = configuration.Tokens.Where(x => Model.db.Tokens.Any(y => y.Username == x.Username && y.Followed.Contains(configuration.StreamerUsername))).Select(x => x.Username);
+                                var followedUsernames = (await Model.db.Bots.Where(x => x.Followed.Contains(user.Configuration.StreamerUsername) && bots.Contains(x.Username)).Select(x => x.Username).ToListAsync());
                                 var inQueueUsernames = await FollowBot.IsInQueue(configuration.Tokens.Select(x => x.Token), configuration.Id, true);
                                 foreach (var bot in bots)
                                 {

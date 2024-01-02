@@ -108,6 +108,10 @@ namespace TCS.Follow
                     {
                         try
                         {
+                            using HttpClient httpClient = new(new HttpClientHandler()
+                            {
+                                Proxy = new WebProxy($"{Item.Proxy.Type}://{Item.Proxy.Host}:{Item.Proxy.Port}", false, new string[] { }, Item.Proxy.Credentials.Value),
+                            });
                             integrity = (await (await e.ResponseAsync()).JsonAsync<Integrity>()).token;
                             useragent = e.Headers["user-agent"];
                             authorization = e.Headers["authorization"];
@@ -129,6 +133,7 @@ namespace TCS.Follow
                             message.Headers.Add("X-Device-Id", deviceid);
                             message.Headers.Add("Client-Integrity", integrity);
                             var r = await httpClient.SendAsync(message);
+                            //Console.WriteLine(await r.Content.ReadAsStringAsync());
                             returned = true;
                         }
                         catch { }
@@ -146,7 +151,7 @@ namespace TCS.Follow
                 });
                 Task task = null;
                 task = page.GotoAsync($"https://www.twitch.tv/{Item.Channel}");
-                for (var i = 0; i < 300 && !returned; i++)
+                for (var i = 0; i < 900 && !returned; i++)
                 {
                     await Task.Delay(100);
                 }
@@ -229,7 +234,7 @@ namespace TCS.Follow
             var scopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
             await using var scope = scopeFactory.CreateAsyncScope();
             var db = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
-            var token = await db.Tokens.FindAsync(Item.Token);
+            var token = await db.Bots.FindAsync(Item.Username);
             token.Followed.Add(Item.Channel);
             db.Entry(token).Property(x => x.Followed).IsModified = true;
             await db.SaveChangesAsync();
@@ -240,7 +245,7 @@ namespace TCS.Follow
             var scopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
             await using var scope = scopeFactory.CreateAsyncScope();
             var db = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
-            var token = await db.Tokens.FindAsync(Item.Token);
+            var token = await db.Bots.FindAsync(Item.Username);
             token.Followed.Remove(Item.Channel);
             db.Entry(token).Property(x => x.Followed).IsModified = true;
             await db.SaveChangesAsync();
@@ -251,13 +256,13 @@ namespace TCS.Follow
             while (true)
             {
                 await Lock();
-                if (!FollowBot.Queue.Any(x => x.State == ThreadState.Waiting && x.Date < TimeHelper.GetMoscowTime()))
+                if (!FollowBot.Queue.Any(x => x.State == ThreadState.Waiting && x.Date < TimeHelper.GetUnspecifiedUtc()))
                 {
                     Unlock();
                     await Task.Delay(1000);
                     continue;
                 }
-                Item = FollowBot.Queue.First(x => x.State == ThreadState.Waiting && x.Date < TimeHelper.GetMoscowTime());
+                Item = FollowBot.Queue.First(x => x.State == ThreadState.Waiting && x.Date < TimeHelper.GetUnspecifiedUtc());
                 Item.State = ThreadState.InProgress;
                 Unlock();
                 await Bot();
