@@ -199,7 +199,12 @@ namespace TCS.Controllers
         private async Task<ActionResult> ChangeTokens(int id, JsonElement tokens)
         {
             // Format: token:proxy_type:proxy_host:proxy_port:proxy_username:proxy_password
-            var _tokens = tokens.EnumerateArray().Select(x => (x.GetString()).Split(':')).Distinct().Where(x => x.Length == 6).ToDictionary(x => x[0], x => x[1..]);
+            var __tokens = tokens.EnumerateArray().Select(x => (x.GetString()).Split(':')).Distinct().Where(x => x.Length == 6)/*.ToDictionary(x => x[0], x => x[1..])*/;
+            Dictionary<string, string[]> _tokens = new();
+            foreach(var token in __tokens)
+            {
+                _tokens.TryAdd(token[0], token[1..]);
+            }
             var tokensChecked = await TokenCheck.Check(_tokens.Keys);
             await Manager.StopSpam(id, db);
             await Manager.DisconnectAllBots(id, db);
