@@ -32,13 +32,9 @@ function scrollBotList() {
 }
 
 function nextBtn() {
-    var selectedBotname = history[historyIndex];
-    var selectedBotItem = $('#bots-list div[botname="' + selectedBotname + '"]');
-    if (selectedBotItem.length === 0) {
-        return;
-    }
-    selectedBotItem.removeClass('selected-item');
+    $('#bots .selected-item').removeClass('selected-item')
     if (history.length == historyIndex + 1) {
+        var selectedBotItem = $('#bots-list div[botname="' + history[historyIndex] + '"]');
         if (isRandom) {
             var newSelectedBotItem;
             if ($('#bots-list #bots [state="connected"]').length == 0) {
@@ -47,7 +43,7 @@ function nextBtn() {
                 do {
                     var randomIndex = Math.floor(Math.random() * $('#bots-list #bots [state="connected"]').length);
                     newSelectedBotItem = $($('#bots-list #bots [state="connected"]')[randomIndex])
-                } while (newSelectedBotItem.is(selectedBotItem) && !$('#bots-list #bots [state="connected"]').length == 1);
+                } while (newSelectedBotItem.attr('botname') === selectedBotItem.attr('botname') && $('#bots-list #bots [state="connected"]').length != 1);
 
             }
             var newSelectedBotname = newSelectedBotItem.attr('botname');
@@ -74,12 +70,11 @@ function nextBtn() {
         }
     }
     else {
+        historyIndex++;
         var newSelectedBotItem = $('#bots-list div[botname="' + history[historyIndex] + '"]');
         newSelectedBotItem.addClass('selected-item');
-        historyIndex++;
     }
     scrollBotList();
-
 }
 
 function prevBtn() {

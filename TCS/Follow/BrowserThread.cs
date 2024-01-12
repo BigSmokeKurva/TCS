@@ -215,7 +215,7 @@ namespace TCS.Follow
             {
                 return ThreadState.Error;
             }
-            if (personalSections.data.personalSections[0].items.Any(x =>
+            if (personalSections.data.personalSections[0].items is not null && personalSections.data.personalSections[0].items.Any(x =>
             {
                 if (x.user is null)
                 {

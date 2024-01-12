@@ -33,6 +33,7 @@ namespace TCS.BotsManager
         }
         public async Task Disconnect()
         {
+            if (connection is null) return;
             try
             {
                 await connection.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);

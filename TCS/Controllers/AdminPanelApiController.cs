@@ -201,7 +201,7 @@ namespace TCS.Controllers
             // Format: token:proxy_type:proxy_host:proxy_port:proxy_username:proxy_password
             var __tokens = tokens.EnumerateArray().Select(x => (x.GetString()).Split(':')).Distinct().Where(x => x.Length == 6)/*.ToDictionary(x => x[0], x => x[1..])*/;
             Dictionary<string, string[]> _tokens = new();
-            foreach(var token in __tokens)
+            foreach (var token in __tokens)
             {
                 _tokens.TryAdd(token[0], token[1..]);
             }
