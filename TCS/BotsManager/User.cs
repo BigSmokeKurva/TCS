@@ -32,6 +32,10 @@ namespace TCS.BotsManager
             cancellationToken = new();
             task = Timer();
         }
+        /// <summary>
+        /// TODO Переделать через HostedService
+        /// </summary>
+        /// <returns></returns>
         private async Task Timer()
         {
             try

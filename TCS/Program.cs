@@ -5,6 +5,7 @@ using TCS.BotsManager;
 using TCS.Database;
 using TCS.Filters;
 using TCS.Follow;
+using TCS.Services;
 
 namespace TCS
 {
@@ -102,6 +103,7 @@ namespace TCS
             builder.Services.AddMvc();
             builder.Services.AddScoped<AdminAuthorizationFilter>();
             builder.Services.AddScoped<UserAuthorizationFilter>();
+            builder.Services.AddHostedService<SessionExpiresCheckService>();
             if (!string.Equals(environment, "Development", StringComparison.OrdinalIgnoreCase))
             {
                 builder.WebHost.ConfigureKestrel(options =>
