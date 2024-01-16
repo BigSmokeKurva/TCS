@@ -25,7 +25,7 @@
 
 <html>
 <head>
-    <title>RBTChat</title>
+    <title>MinionChat</title>
     <link rel="stylesheet" href="~/App/style.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
@@ -45,9 +45,8 @@
             </div>
         </div>
         <div class="overlay"></div>
-
         <div id="main_grid">
-            <span id="title">RBTChat</span>
+            <span id="title">MinionChat</span>
             <div class="user-panel">
                 @if (isAdmin)
                 {
@@ -154,13 +153,13 @@
                 </div>
                 <div id="content"></div>
                 <div id="stream-content">
-                    <iframe src="https://player.twitch.tv/?channel=@(string.IsNullOrEmpty(streamerUsername) ? "-" : streamerUsername)&parent=rbtchat.site"
+                    <iframe src="https://player.twitch.tv/?channel=@(string.IsNullOrEmpty(streamerUsername) ? "-" : streamerUsername)&parent=minionchat.ru"
                             height="100%"
                             width="100%"
                             frameborder="0"
                             scrolling="no">
                     </iframe>
-                    <iframe src="https://www.twitch.tv/embed/@(string.IsNullOrEmpty(streamerUsername) ? "-" : streamerUsername)/chat?darkpopout&parent=rbtchat.site"
+                    <iframe src="https://www.twitch.tv/embed/@(string.IsNullOrEmpty(streamerUsername) ? "-" : streamerUsername)/chat?darkpopout&parent=minionchat.ru"
                             height="100%"
                             width="100%"
                             frameborder="0"
@@ -172,6 +171,10 @@
 
         </div>
     </main>
+    <div class="made-by">
+        <a href="https://t.me/Zav0digital" target="_blank">Made by Zav0d</a>
+    </div>
+
     <div class="notification-container" id="notification-container"></div>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="~/App/script.js"></script>

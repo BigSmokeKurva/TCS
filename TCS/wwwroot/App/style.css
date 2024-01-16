@@ -600,6 +600,17 @@ main {
         -moz-appearance: textfield;
     }
 
+.made-by {
+    position: absolute;
+    color: rgb(69, 69, 69);
+    right: 130px;
+    bottom:7px;
+}
+
+    .made-by a {
+        text-decoration: none;
+        color: rgb(69, 69, 69);
+    }
 
 @media (max-width: 768px) {
     body {
@@ -739,5 +750,11 @@ main {
 
     #window #save-window-btn {
         margin-left: 0;
+    }
+
+    .made-by{
+        bottom:auto;
+        margin-top: 10px;
+margin-bottom: 10px;
     }
 }
