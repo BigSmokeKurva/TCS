@@ -850,6 +850,12 @@ $(document).ready(function () {
             await unfollowAllBots();
         }
         cancelWindow();
-
+    });
+    $(document).keydown(function (e) {
+        // F1
+        if (e.which === 112) {
+            e.preventDefault();
+            prevBtn();
+        }
     });
 });
