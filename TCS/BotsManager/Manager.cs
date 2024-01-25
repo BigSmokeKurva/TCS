@@ -20,8 +20,8 @@ namespace TCS.BotsManager
             {
 
                 var streamerUsername = await db.Configurations.Where(x => x.Id == id).Select(x => x.StreamerUsername).FirstAsync();
-                users.Add(id, new User(id, streamerUsername));
-                users[id].UpdateTimer();
+                if (users.TryAdd(id, new User(id, streamerUsername)))
+                    users[id].UpdateTimer();
                 return;
             }
 
@@ -90,8 +90,13 @@ namespace TCS.BotsManager
                 return false;
             }
 
-            await user.Send(botUsername, message);
-            return true;
+            try
+            {
+                await user.Send(botUsername, message);
+                return true;
+            }
+            catch { }
+            return false;
         }
         public static async Task<bool> SpamStarted(int id, DatabaseContext db)
         {

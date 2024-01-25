@@ -560,7 +560,15 @@ namespace TCS.Controllers
                     message = "Сообщение содержит запрещенные слова."
                 });
             }
-            await Manager.Send(configuration.Id, model.botname, message, db);
+            var r = await Manager.Send(configuration.Id, model.botname, message, db);
+            if (!r)
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "Ошибка отправки сообщения."
+                });
+            }
             await db.AddLog(configuration.Id, $"Отправил сообщение {message} из бинда {model.bindname}.", Database.Models.LogType.Chat);
             await db.SaveChangesAsync();
             return Ok(new

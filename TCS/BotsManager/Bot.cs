@@ -23,13 +23,19 @@ namespace TCS.BotsManager
                 Address = new Uri($"{proxy.Type}://{proxy.Host}:{proxy.Port}"),
                 Credentials = proxy.Credentials
             };
-            await connection.ConnectAsync(new Uri($"wss://irc-ws.chat.twitch.tv:443"), new CancellationTokenSource(5000).Token);
-            await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes("CAP REQ :twitch.tv/tags twitch.tv/commands")), WebSocketMessageType.Text, true, new CancellationTokenSource(5000).Token);
-            await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes("PASS oauth:" + token)), WebSocketMessageType.Text, true, new CancellationTokenSource(5000).Token);
-            await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"NICK {username}")), WebSocketMessageType.Text, true, new CancellationTokenSource(5000).Token);
-            await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"USER {username} 8 *:{username}")), WebSocketMessageType.Text, true, new CancellationTokenSource(5000).Token);
-            await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"JOIN #{streamerUsername}")), WebSocketMessageType.Text, true, new CancellationTokenSource(5000).Token);
-
+            try
+            {
+                await connection.ConnectAsync(new Uri($"wss://irc-ws.chat.twitch.tv:443"), new CancellationTokenSource(5000).Token);
+                await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes("CAP REQ :twitch.tv/tags twitch.tv/commands")), WebSocketMessageType.Text, true, new CancellationTokenSource(5000).Token);
+                await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes("PASS oauth:" + token)), WebSocketMessageType.Text, true, new CancellationTokenSource(5000).Token);
+                await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"NICK {username}")), WebSocketMessageType.Text, true, new CancellationTokenSource(5000).Token);
+                await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"USER {username} 8 *:{username}")), WebSocketMessageType.Text, true, new CancellationTokenSource(5000).Token);
+                await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"JOIN #{streamerUsername}")), WebSocketMessageType.Text, true, new CancellationTokenSource(5000).Token);
+            }
+            catch
+            {
+                throw new Exception("Failed to connect to Twitch");
+            }
         }
         public async Task Disconnect()
         {

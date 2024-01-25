@@ -65,7 +65,18 @@ namespace TCS.Controllers
                    }
                ]
             });
-            await db.SaveChangesAsync();
+            try
+            {
+                await db.SaveChangesAsync();
+            }
+            catch (Exception e)
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "Неизвестная ошибка при регистрации."
+                });
+            }
 
             var cookieOptions = new CookieOptions
             {
