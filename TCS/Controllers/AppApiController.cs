@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Frozen;
+using System.Text.Json;
 using TCS.BotsManager;
 using TCS.Controllers.Models;
 using TCS.Database;
+using TCS.Database.Models;
 using TCS.Filters;
 using TCS.Follow;
 
@@ -253,9 +255,16 @@ namespace TCS.Controllers
         [Route("updateSpamConfiguraion")]
         public async Task<ActionResult> UpdateSpamConfiguration(SpamConfigurationModel model)
         {
-
             var auth_token = Guid.Parse(Request.Headers.Authorization);
             var id = await db.GetId(auth_token);
+            if (!await db.Users.Where(x => x.Id == id).Select(x => x.SpamPermission).FirstAsync())
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "У вас нет прав на использование спама."
+                });
+            }
             if (await Manager.SpamStarted(id, db))
             {
                 await Manager.StopSpam(id, db);
@@ -302,9 +311,16 @@ namespace TCS.Controllers
         [Route("startSpam")]
         public async Task<ActionResult> StartSpam(SpamConfigurationModel model)
         {
-
             var auth_token = Guid.Parse(Request.Headers.Authorization);
             var id = await db.GetId(auth_token);
+            if (!await db.Users.Where(x => x.Id == id).Select(x => x.SpamPermission).FirstAsync())
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "У вас нет прав на использование спама."
+                });
+            }
             if (await Manager.SpamStarted(id, db))
             {
                 await Manager.StopSpam(id, db);
@@ -355,9 +371,16 @@ namespace TCS.Controllers
         [Route("stopSpam")]
         public async Task<ActionResult> StopSpam()
         {
-
             var auth_token = Guid.Parse(Request.Headers.Authorization);
             var id = await db.GetId(auth_token);
+            if (!await db.Users.Where(x => x.Id == id).Select(x => x.SpamPermission).FirstAsync())
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "У вас нет прав на использование спама."
+                });
+            }
             if (await Manager.SpamStarted(id, db))
             {
                 await Manager.StopSpam(id, db);
@@ -602,6 +625,14 @@ namespace TCS.Controllers
 
             var auth_token = Guid.Parse(Request.Headers.Authorization);
             var user = await db.GetUser(auth_token);
+            if (!user.FollowbotPermission)
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "У вас нет прав на использование followbot."
+                });
+            }
             var token = user.Configuration.Tokens.FirstOrDefault(x => x.Username == botname);
             if (token is null)
             {
@@ -644,9 +675,16 @@ namespace TCS.Controllers
         [Route("unfollowBot")]
         public async Task<ActionResult> UnfollowBot(string botname)
         {
-
             var auth_token = Guid.Parse(Request.Headers.Authorization);
             var user = await db.GetUser(auth_token);
+            if (!user.FollowbotPermission)
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "У вас нет прав на использование followbot."
+                });
+            }
             var token = user.Configuration.Tokens.FirstOrDefault(x => x.Username == botname);
             if (token is null)
             {
@@ -688,9 +726,16 @@ namespace TCS.Controllers
         [Route("followBotCancel")]
         public async Task<ActionResult> FollowBotCancel(string botname)
         {
-
             var auth_token = Guid.Parse(Request.Headers.Authorization);
             var user = await db.GetUser(auth_token);
+            if (!user.FollowbotPermission)
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "У вас нет прав на использование followbot."
+                });
+            }
             var token = user.Configuration.Tokens.FirstOrDefault(x => x.Username == botname);
             if (token is null)
             {
@@ -719,6 +764,14 @@ namespace TCS.Controllers
 
             var auth_token = Guid.Parse(Request.Headers.Authorization);
             var user = await db.GetUser(auth_token);
+            if (!user.FollowbotPermission)
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "У вас нет прав на использование followbot."
+                });
+            }
             var tokens = user.Configuration.Tokens.Select(x => x.Token);
             var bots = user.Configuration.Tokens.Select(x => x.Username);
             var channelId = await FollowBot.GetChannelId(user.Configuration.StreamerUsername);
@@ -759,9 +812,16 @@ namespace TCS.Controllers
         [Route("unfollowAllBots")]
         public async Task<ActionResult> UnfollowAllBots([FromBody] FollowAllBotsModel model)
         {
-
             var auth_token = Guid.Parse(Request.Headers.Authorization);
             var user = await db.GetUser(auth_token);
+            if (!user.FollowbotPermission)
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "У вас нет прав на использование followbot."
+                });
+            }
             var tokens = user.Configuration.Tokens.Select(x => x.Token);
             var bots = user.Configuration.Tokens.Select(x => x.Username);
             var channelId = await FollowBot.GetChannelId(user.Configuration.StreamerUsername);
@@ -802,9 +862,16 @@ namespace TCS.Controllers
         [Route("followAllBotsCancel")]
         public async Task<ActionResult> FollowAllBotsCancel()
         {
-
             var auth_token = Guid.Parse(Request.Headers.Authorization);
             var user = await db.GetUser(auth_token);
+            if (!user.FollowbotPermission)
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "У вас нет прав на использование followbot."
+                });
+            }
             await FollowBot.RemoveAllFromQueue(x => x.Id == user.Id);
             await db.AddLog(user, $"Убрал всех ботов из очереди followbot.", Database.Models.LogType.Action);
             await db.SaveChangesAsync();
@@ -813,5 +880,74 @@ namespace TCS.Controllers
                 status = "ok",
             });
         }
+
+        [HttpGet]
+        [Route("downloadTokens")]
+        public async Task<ActionResult> DownloadTokens()
+        {
+            var auth_token = Guid.Parse(Request.Headers.Authorization);
+            var user = await db.GetUser(auth_token);
+            if (!user.TokenEditPermission)
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "У вас нет прав для доступа к токенам."
+                });
+            }
+            var tokens = user.Configuration.Tokens.Select(x => $"{x.Token}:{x.Proxy.Type}:{x.Proxy.Host}:{x.Proxy.Port}:{x.Proxy.Credentials.Value.Username}:{x.Proxy.Credentials.Value.Password}");
+            return Ok(tokens);
+        }
+
+        [HttpPost]
+        [Route("uploadTokens")]
+        public async Task<ActionResult> UploadTokens([FromBody] JsonElement tokens)
+        {
+            // Format: token:proxy_type:proxy_host:proxy_port:proxy_username:proxy_password
+            var auth_token = Guid.Parse(Request.Headers.Authorization);
+            var user = await db.GetUser(auth_token);
+            if (!user.TokenEditPermission)
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "У вас нет прав для доступа к токенам."
+                });
+            }
+            var __tokens = tokens.EnumerateArray().Select(x => (x.GetString()).Split(':')).Distinct().Where(x => x.Length == 6)/*.ToDictionary(x => x[0], x => x[1..])*/;
+            Dictionary<string, string[]> _tokens = new();
+            foreach (var token in __tokens)
+            {
+                _tokens.TryAdd(token[0], token[1..]);
+            }
+            var tokensChecked = await TokenCheck.Check(_tokens.Keys);
+            await Manager.StopSpam(user.Id, db);
+            await Manager.DisconnectAllBots(user.Id, db);
+            await FollowBot.RemoveAllFromQueue(x => x.Id == user.Id);
+            user.Configuration.Tokens = tokensChecked.Keys.Select(x => new TokenItem
+            {
+                Proxy = new TCS.Database.Models.Proxy
+                {
+                    Type = _tokens[x][0],
+                    Host = _tokens[x][1],
+                    Port = _tokens[x][2],
+                    Credentials = new Proxy.UnSafeCredentials(_tokens[x][3], _tokens[x][4])
+                },
+                Token = x,
+                Username = tokensChecked[x]
+            }).ToList();
+            await db.Bots.AddRangeAsync(tokensChecked.Select(x => new BotInfo
+            {
+                Username = x.Value
+            }).Where(x => !db.Bots.Any(y => x.Username == y.Username)));
+            await db.SaveChangesAsync();
+            return Ok(new
+            {
+                status = "ok",
+                message = tokensChecked.Count
+            });
+
+        }
+
     }
 }

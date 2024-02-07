@@ -89,6 +89,8 @@ main {
 .streamer-username-container {
     display: flex;
     margin-top: 43px;
+    grid-row:2;
+grid-column:1;
 }
 
     .streamer-username-container button {
@@ -151,6 +153,7 @@ main {
 
 .menu {
     margin: -29.01px 32px 0 0;
+    grid-column:1;
 }
 
 
@@ -600,6 +603,84 @@ main {
         -moz-appearance: textfield;
     }
 
+.menu-item {
+    position: relative;
+}
+
+.toggleButton {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: rgb(63,66,70);
+    min-width: 160px;
+    z-index: 1;
+    border-radius: 4px;
+    margin-left: 8px;
+    margin-top: 5px;
+}
+
+    .dropdown-content > button,
+    .dropdown-content > div {
+        background: none;
+        border: none;
+        display: block;
+        width: 100%;
+        text-align: left;
+        text-decoration: none;
+        color: black;
+        cursor: pointer;
+        margin: 0;
+        height: 40px;
+        padding-left: 20px;
+        color: white;
+        border-radius: 4px;
+    }
+
+    .dropdown-content > div {
+        display: flex;
+        align-items: center;
+        width: auto;
+        font-size: 13.3333px;
+    }
+
+    .dropdown-content .checkbox + label {
+        margin: 0 10px 0 auto;
+    }
+
+    .dropdown-content > button:hover,
+    .dropdown-content > div:hover {
+        background-color: rgb(75,76,83);
+    }
+
+    .dropdown-content > button:active,
+    .dropdown-content > div:active {
+        background-color: rgb(148,138,207);
+    }
+
+.tokens-div {
+    display: flex;
+    color: rgb(192,192,194);
+    align-items:center;
+    margin: auto 32px 12px auto;
+    grid-row:2;
+    grid-column:1;
+}
+
+    .tokens-div > div > button {
+        margin-left: 8px;
+    }
+
+
+
 
 @media (max-width: 768px) {
     body {
@@ -614,7 +695,7 @@ main {
 
     #main_grid {
         grid-template-columns: 1fr;
-        grid-template-rows: auto auto auto auto auto auto;
+        grid-template-rows: auto auto auto auto auto auto auto;
     }
 
     .user-panel {
@@ -642,7 +723,7 @@ main {
         }
 
     .streamer-username-container {
-        grid-row: 3;
+        grid-row: 4;
         margin-top: 20px;
         justify-self: center;
     }
@@ -656,7 +737,7 @@ main {
     }
 
     .status {
-        grid-row: 4;
+        grid-row: 5;
         margin-top: 20px;
         width: 288.976px;
         padding: 16px;
@@ -670,7 +751,7 @@ main {
         }
 
     .menu {
-        grid-row: 5;
+        grid-row: 6;
         margin: 20px 0 0 0;
         justify-self: center;
     }
@@ -739,5 +820,10 @@ main {
 
     #window #save-window-btn {
         margin-left: 0;
+    }
+
+    .tokens-div{
+        grid-row:3;
+        margin: 21px auto 0 auto;
     }
 }

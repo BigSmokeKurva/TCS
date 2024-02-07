@@ -535,7 +535,8 @@ main {
     margin-top: 5px;
 }
 
-    .dropdown-content button {
+    .dropdown-content > button,
+    .dropdown-content > div {
         background: none;
         border: none;
         display: block;
@@ -551,11 +552,24 @@ main {
         border-radius: 4px;
     }
 
-        .dropdown-content button:hover {
+    .dropdown-content > div {
+        display: flex;
+        align-items: center;
+        width: auto;
+        font-size:13.3333px;
+    }
+
+    .dropdown-content .checkbox + label {
+        margin: 0 10px 0 auto;
+    }
+
+        .dropdown-content > button:hover,
+        .dropdown-content > div:hover {
             background-color: rgb(75,76,83);
         }
 
-        .dropdown-content button:active {
+        .dropdown-content > button:active,
+        .dropdown-content > div:active {
             background-color: rgb(148,138,207);
         }
 
@@ -658,5 +672,34 @@ main {
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
-    display:none;
+    display: none;
+}
+
+.checkbox {
+    display: none;
+}
+
+    .checkbox + label::before {
+        content: "";
+        display: flex;
+        width: 20px;
+        height: 20px;
+        border: 1px solid rgb(174, 174, 178);
+        border-radius: 4px;
+        justify-content: center;
+        align-items: center;
+        background-color: transparent;
+        transition: background-color 0.05s, border-color 0.05s;
+        margin-left: 10px;
+        cursor: pointer;
+    }
+
+    .checkbox:checked + label::before {
+        content: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="15" height="11.25" viewBox="0 0 12 9" fill="none"><path d="M10.3333 1L3.91667 7.41667L1 4.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+        background-color: rgb(118, 104, 203);
+        border: 1px solid rgb(118, 104, 203);
+    }
+
+#delete-user-btn{
+    color:red;
 }

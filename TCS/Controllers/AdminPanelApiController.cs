@@ -52,7 +52,10 @@ namespace TCS.Controllers
                         .Select(l => l.Time.Date)
                         .Distinct()
                         .OrderByDescending(x => x)
-                        .Select(x => x.ToString("dd.MM.yyyy")).ToListAsync()
+                        .Select(x => x.ToString("dd.MM.yyyy")).ToListAsync(),
+                FollowbotPermission = user.FollowbotPermission,
+                SpamPermission = user.SpamPermission,
+                TokenEditPermission = user.TokenEditPermission
             };
             return Ok(userInfo);
         }
@@ -88,6 +91,9 @@ namespace TCS.Controllers
                 ChangeType.Admin => await ChangeAdmin(model.Id, model.Value.GetBoolean()),
                 ChangeType.Tokens => await ChangeTokens(model.Id, model.Value),
                 ChangeType.Paused => await ChangePaused(model.Id, model.Value.GetBoolean()),
+                ChangeType.FollowbotPermission => await ChangeFollowbotPermission(model.Id, model.Value.GetBoolean()),
+                ChangeType.SpamPermission => await ChangeSpamPermission(model.Id, model.Value.GetBoolean()),
+                ChangeType.TokenEditPermission => await ChangeTokenEditPermission(model.Id, model.Value.GetBoolean()),
                 _ => Ok(new
                 {
                     status = "error",
@@ -231,6 +237,36 @@ namespace TCS.Controllers
             {
                 status = "ok",
                 message = tokensChecked.Count
+            });
+        }
+        private async Task<ActionResult> ChangeFollowbotPermission(int id, bool value)
+        {
+            var user = await db.Users.FindAsync(id);
+            user.FollowbotPermission = value;
+            await db.SaveChangesAsync();
+            return Ok(new
+            {
+                status = "ok"
+            });
+        }
+        private async Task<ActionResult> ChangeSpamPermission(int id, bool value)
+        {
+            var user = await db.Users.FindAsync(id);
+            user.SpamPermission = value;
+            await db.SaveChangesAsync();
+            return Ok(new
+            {
+                status = "ok"
+            });
+        }
+        private async Task<ActionResult> ChangeTokenEditPermission(int id, bool value)
+        {
+            var user = await db.Users.FindAsync(id);
+            user.TokenEditPermission = value;
+            await db.SaveChangesAsync();
+            return Ok(new
+            {
+                status = "ok"
             });
         }
 

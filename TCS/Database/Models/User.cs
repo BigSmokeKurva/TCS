@@ -12,6 +12,9 @@
 
         public bool Admin { get; set; } = false;
         public bool Paused { get; set; } = false;
+        public bool FollowbotPermission { get; set; } = false;
+        public bool SpamPermission { get; set; } = false;
+        public bool TokenEditPermission { get; set; } = false;
         public DateTime LastOnline { get; set; } = TimeHelper.GetUnspecifiedUtc();
         public virtual Configuration Configuration { get; set; } = new();
         public virtual List<Session> Sessions { get; set; } = [];

@@ -9,7 +9,10 @@ namespace TCS.Controllers.Models
         Email = 2,
         Admin = 3,
         Tokens = 4,
-        Paused = 5
+        Paused = 5,
+        FollowbotPermission = 6,
+        SpamPermission = 7,
+        TokenEditPermission = 8,
     }
 
     public class EditUserModel

@@ -25,6 +25,9 @@ namespace TCS.Database
                 entity.Property(e => e.Email).HasColumnName("email").IsRequired().HasMaxLength(50);
                 entity.Property(e => e.Admin).HasColumnName("admin");
                 entity.Property(e => e.Paused).HasColumnName("paused");
+                entity.Property(e => e.FollowbotPermission).HasColumnName("followbot_permission");
+                entity.Property(e => e.SpamPermission).HasColumnName("spam_permission");
+                entity.Property(e => e.TokenEditPermission).HasColumnName("token_edit_permission");
                 entity.Property(e => e.LastOnline).HasColumnName("last_online").HasColumnType("timestamp").HasDefaultValue(TimeHelper.GetUnspecifiedUtc());
 
                 entity.HasOne(e => e.Configuration)

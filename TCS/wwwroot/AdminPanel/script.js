@@ -16,7 +16,10 @@ const propertyMappings = {
     'email': 2,
     'admin': 3,
     'tokens': 4,
-    'paused': 5
+    'paused': 5,
+    'followPermission': 6,
+    'spamPermission': 7,
+'tokensEditPermission': 8
 };
 
 function showNotification(notificationText) {
@@ -146,8 +149,15 @@ async function selectUser(button) {
     $('#password').text(selectedUserInfo.password);
     $('#tokens-count').text(selectedUserInfo.tokensCount);
     $('#email').text(selectedUser.email);
-    $("#admin-btn").text(selectedUserInfo.admin ? "Снять админку" : "Выдать админку");
-    $('#pause-btn').text(selectedUserInfo.paused ? "Снять паузу" : "Поставить на паузу");
+    // TODO посмотреть во всем файл по селектору
+    //$("#admin-btn").text(selectedUserInfo.admin ? "Снять админку" : "Выдать админку");
+    //$('#pause-btn').text(selectedUserInfo.paused ? "Снять паузу" : "Поставить на паузу");
+
+    $('#admin-btn > input').prop('checked', selectedUserInfo.admin);
+    $('#pause-btn > input').prop('checked', selectedUserInfo.paused);
+    $('#follow-permission-btn > input').prop('checked', selectedUserInfo.followbotPermission);
+    $('#spam-permission-btn > input').prop('checked', selectedUserInfo.spamPermission);
+    $('#tokens-edit-permission-btn > input').prop('checked', selectedUserInfo.tokenEditPermission);
 
     const logsTimeList = $('#logs-time-list');
     logsTimeList.empty();
@@ -203,7 +213,9 @@ function getUsers() {
                     if (chatLogsButton.disabled !== true) {
                         chatLogsButton.click();
                     }
-                    await getLogs(0);
+                    else {
+                        await getLogs(0);
+                    }
                 });
                 users[user.id] = user;
 
@@ -594,13 +606,33 @@ $(document).ready(function () {
         var value = !selectedUserInfo.admin;
         await sendEditUserRequest('admin', value);
         selectedUserInfo.admin = value;
-        $("#admin-btn").text(value ? "Снять админку" : "Выдать админку");
+        //$("#admin-btn").text(value ? "Снять админку" : "Выдать админку");
+        $('#admin-btn > input').prop('checked', value);
     });
     $('#pause-btn').on('click', async function () {
         var value = !selectedUserInfo.paused;
         await sendEditUserRequest('paused', value);
         selectedUserInfo.paused = value;
-        $('#pause-btn').text(value ? "Снять паузу" : "Поставить на паузу");
+        //$('#pause-btn').text(value ? "Снять паузу" : "Поставить на паузу");
+$('#pause-btn > input').prop('checked', value);
+    });
+$('#follow-permission-btn').on('click', async function () {
+        var value = !selectedUserInfo.followbotPermission;
+        await sendEditUserRequest('followPermission', value);
+        selectedUserInfo.followbotPermission = value;
+        $('#follow-permission-btn > input').prop('checked', value);
+});
+$('#spam-permission-btn').on('click', async function () {
+        var value = !selectedUserInfo.spamPermission;
+        await sendEditUserRequest('spamPermission', value);
+        selectedUserInfo.spamPermission = value;
+        $('#spam-permission-btn > input').prop('checked', value);
+});
+$('#tokens-edit-permission-btn').on('click', async function () {
+        var value = !selectedUserInfo.tokensEditPermission;
+        await sendEditUserRequest('tokensEditPermission', value);
+        selectedUserInfo.tokensEditPermission = value;
+        $('#tokens-edit-permission-btn > input').prop('checked', value);
     });
     $('#delete-user-btn').on('click', async function () {
         const auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");

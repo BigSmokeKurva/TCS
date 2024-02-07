@@ -611,6 +611,133 @@ async function followAllBotsCancel() {
     }
     await getFollowStat(false);
 }
+async function uploadTokens(input) {
+    var selectedFile = input[0].files[0];
+    if (!selectedFile) {
+        return;
+    }
+
+    var reader = new FileReader();
+
+    reader.onload = async function (e) {
+        var auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+        var fileContent = e.target.result;
+        var lines = fileContent.split('\n')
+            .map(line => line.trim().replace(/\r/g, ''))
+            .filter(line => line !== '');
+
+        try {
+            showNotification("Проверка токенов... По завершению проверки страница автоматически перезагрузится.");
+            // TODO
+            var response = await fetch('api/app/uploadTokens', {
+                method: 'POST',
+                headers: {
+                    "Authorization": auth_token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(lines)
+            });
+
+            if (!response.ok) {
+                showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+                return;
+            }
+            response = await response.json();
+
+            if (response.status === "error") {
+                showNotification(response.message);
+                return;
+            }
+            location.reload();
+        } catch (error) {
+            showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+        }
+    };
+
+    reader.readAsText(selectedFile);
+}
+
+function download(data, fileName) {
+    // Создаем новый Blob (бинарный объект) с вашими данными и типом MIME "text/plain"
+    const blob = new Blob([data], { type: "text/plain" });
+
+    // Создаем ссылку для скачивания
+    const url = window.URL.createObjectURL(blob);
+
+    // Создаем элемент "a" для скачивания файла
+    const a = $("<a>")
+        .attr("href", url)
+        .attr("download", fileName); // Имя файла, которое будет предложено при скачивании
+
+    // Добавляем элемент "a" в документ и производим клик на нем для начала загрузки
+    a.appendTo("body").get(0).click();
+
+    // Освобождаем ресурсы после завершения скачивания
+    window.URL.revokeObjectURL(url);
+
+    // Удаляем элемент "a" после скачивания
+    a.remove();
+}
+
+async function downloadTokens() {
+    const auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+
+    try {
+        const response = await fetch('api/app/downloadTokens', {
+            method: 'GET',
+            headers: {
+                "Authorization": auth_token
+            }
+        });
+
+        if (!response.ok) {
+            showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+            return;
+        }
+
+
+        const data = await response.json();
+
+        if (data.status === "error") {
+            showNotification(data.message);
+            return;
+        }
+
+        //let resultString = "";
+
+        //// Перебираем элементы словаря
+        //for (const key in data) {
+        //    if (data.hasOwnProperty(key)) {
+        //        resultString += key + ":" + data[key] + "\n";
+        //    }
+        //}
+
+        //download(resultString, 'tokensAndUsernames.txt');
+        //resultString = "";
+
+        //// Перебираем элементы словаря
+        //for (const key in data) {
+        //    if (data.hasOwnProperty(key)) {
+        //        resultString += key + "\n";
+        //    }
+        //}
+
+        download(data.join('\n'), 'tokens.txt');
+
+    } catch (error) {
+        showNotification("Произошла неизвестная ошибка. Попробуйте позже.");
+    }
+}
+
+
+function setupFileInput(input, uploadFunction) {
+    input.off('change');
+    input.change(function () {
+        uploadFunction(input);
+    });
+    input.click();
+    input.val('');
+}
 
 $(document).ready(function () {
     spamButton.addEventListener('click', async function () {
@@ -854,5 +981,33 @@ $(document).ready(function () {
         }
         cancelWindow();
 
+    });
+    $('.menu-item .toggleButton').click(function (event) {
+        event.stopPropagation();
+
+        var $clickedMenuItem = $(this).closest('.menu-item');
+        var $dropdownContent = $clickedMenuItem.find('.dropdown-content');
+
+        $('.menu-item').not($clickedMenuItem).find('.dropdown-content').hide();
+
+        $dropdownContent.toggle();
+    });
+    $(document).on('click', function (event) {
+        var $dropdownContents = $('.dropdown-content');
+        var $clickedMenuItem = $(event.target).closest('.menu-item');
+
+        if (!$dropdownContents.is(event.target) && $dropdownContents.has(event.target).length === 0 &&
+            !$clickedMenuItem.length) {
+            $dropdownContents.hide();
+        }
+    });
+    $('.menu-item .dropdown-content button').click(function () {
+        $(this).closest('.dropdown-content').hide();
+    });
+    $('#upload-tokens').on('click', function () {
+        setupFileInput($('#fileInput'), uploadTokens);
+    });
+    $('#download-tokens').on('click', function () {
+        downloadTokens();
     });
 });

@@ -82,6 +82,19 @@
                     <div class="underline" id="underline"></div>
                 </div>
             </div>
+            <div class="tokens-div">
+                Настройка токенов <span id="tokens-count"></span>
+                <div class="menu-item">
+                    <button class="toggleButton">
+                        <img src="~/AdminPanel/menu.svg" alt="menu" />
+                    </button>
+                    <div class="dropdown-content">
+                        <button id="upload-tokens">Загрузить</button>
+                        <button id="download-tokens">Выгрузить</button>
+                        @* <button id="edit-tokens">Редактор</button> *@
+                    </div>
+                </div>
+            </div>
             <div id="content-container">
                 <div id="bots-list">
                     <span>Ник бота</span>
@@ -172,6 +185,7 @@
 
         </div>
     </main>
+    <input type="file" id="fileInput" accept=".txt" style="display: none;">
     <div class="notification-container" id="notification-container"></div>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="~/App/script.js"></script>
