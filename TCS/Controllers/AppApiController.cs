@@ -72,10 +72,6 @@ namespace TCS.Controllers
         [Route("ping")]
         public async Task<ActionResult> Ping()
         {
-
-            var auth_token = Guid.Parse(Request.Headers.Authorization);
-            var id = await db.GetId(auth_token);
-            await Manager.UpdateTimer(id, db);
             return Ok(new
             {
                 status = "ok",

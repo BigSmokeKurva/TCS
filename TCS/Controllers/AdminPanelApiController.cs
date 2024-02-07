@@ -253,7 +253,7 @@ namespace TCS.Controllers
         {
 
             await Manager.Remove(id, db);
-            db.Users.Remove(await db.Users.FindAsync(id));
+            await db.Users.Where(x => x.Id == id).ExecuteDeleteAsync();
             await db.SaveChangesAsync();
             return Ok(new
             {

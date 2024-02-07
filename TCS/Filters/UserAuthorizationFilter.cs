@@ -31,11 +31,14 @@ namespace TCS.Filters
                 }
                 return;
             }
-            if (await db.Users.Where(x => db.Sessions.Any(y => y.Id == x.Id && y.AuthToken == auth_token_uid)).Select(x => x.Paused).FirstAsync())
+            var user = await db.Users.FirstAsync(x => db.Sessions.Any(y => y.Id == x.Id && y.AuthToken == auth_token_uid));
+            if (user.Paused)
             {
                 context.Result = new RedirectToPageResult("/Paused");
                 return;
             }
+            user.LastOnline = TimeHelper.GetUnspecifiedUtc();
+            await db.SaveChangesAsync();
         }
     }
 }

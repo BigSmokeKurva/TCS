@@ -104,6 +104,7 @@ namespace TCS
             builder.Services.AddScoped<AdminAuthorizationFilter>();
             builder.Services.AddScoped<UserAuthorizationFilter>();
             builder.Services.AddHostedService<SessionExpiresCheckService>();
+            builder.Services.AddHostedService<LastOnlineCheckService>();
             if (!string.Equals(environment, "Development", StringComparison.OrdinalIgnoreCase))
             {
                 builder.WebHost.ConfigureKestrel(options =>

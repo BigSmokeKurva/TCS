@@ -16,7 +16,7 @@ namespace TCS.Services
 
         public async void CheckSessions(object state)
         {
-            using var scope = _serviceProvider.CreateScope();
+            await using var scope = _serviceProvider.CreateAsyncScope();
             var context = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
             await context.Sessions.Where(x => x.Expires < TimeHelper.GetUnspecifiedUtc()).ExecuteDeleteAsync();
             await context.SaveChangesAsync();

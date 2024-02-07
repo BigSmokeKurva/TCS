@@ -14,19 +14,6 @@ namespace TCS.BotsManager
 
             return user.bots.ContainsKey(botUsername);
         }
-        public static async Task UpdateTimer(int id, DatabaseContext db)
-        {
-            if (!users.TryGetValue(id, out var user))
-            {
-
-                var streamerUsername = await db.Configurations.Where(x => x.Id == id).Select(x => x.StreamerUsername).FirstAsync();
-                if (users.TryAdd(id, new User(id, streamerUsername)))
-                    users[id].UpdateTimer();
-                return;
-            }
-
-            user.UpdateTimer();
-        }
         public async static Task ConnectBot(int id, string botUsername, DatabaseContext db)
         {
             if (!users.TryGetValue(id, out var user))
@@ -47,7 +34,6 @@ namespace TCS.BotsManager
 
                 var streamerUsername = await db.Configurations.Where(x => x.Id == id).Select(x => x.StreamerUsername).FirstAsync();
                 users.Add(id, new User(id, streamerUsername));
-                users[id].UpdateTimer();
                 return;
             }
 
@@ -73,7 +59,6 @@ namespace TCS.BotsManager
 
                 var streamerUsername = await db.Configurations.Where(x => x.Id == id).Select(x => x.StreamerUsername).FirstAsync();
                 users.Add(id, new User(id, streamerUsername));
-                users[id].UpdateTimer();
                 return;
             }
 
@@ -86,7 +71,6 @@ namespace TCS.BotsManager
 
                 var streamerUsername = await db.Configurations.Where(x => x.Id == id).Select(x => x.StreamerUsername).FirstAsync();
                 users.Add(id, new User(id, streamerUsername));
-                users[id].UpdateTimer();
                 return false;
             }
 
@@ -105,7 +89,6 @@ namespace TCS.BotsManager
 
                 var streamerUsername = await db.Configurations.Where(x => x.Id == id).Select(x => x.StreamerUsername).FirstAsync();
                 users.Add(id, new User(id, streamerUsername));
-                users[id].UpdateTimer();
                 return false;
             }
             return user.SpamStarted();
@@ -117,7 +100,6 @@ namespace TCS.BotsManager
 
                 var streamerUsername = await db.Configurations.Where(x => x.Id == id).Select(x => x.StreamerUsername).FirstAsync();
                 users.Add(id, new User(id, streamerUsername));
-                users[id].UpdateTimer();
                 return;
             }
             await user.StopSpam();
@@ -130,7 +112,6 @@ namespace TCS.BotsManager
                 var streamerUsername = await db.Configurations.Where(x => x.Id == id).Select(x => x.StreamerUsername).FirstAsync();
                 users.Add(id, new User(id, streamerUsername));
                 user = users[id];
-                user.UpdateTimer();
                 await user.StartSpam(threads, delay, messages, mode);
                 return;
             }

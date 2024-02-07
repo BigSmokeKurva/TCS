@@ -412,7 +412,10 @@ function disconnectAllBots() {
         });
 }
 
-async function getFollowStat() {
+async function getFollowStat(checkState = true) {
+    if (checkState && $('#bots > div.item[followstate="waiting"]').length === 0) {
+        return;
+    }
     var auth_token = document.cookie.replace(/(?:(?:^|.*;\s*)auth_token\s*=\s*([^;]*).*$)|^.*$/, "$1");
     var response = await fetch("/api/app/getFollowBots", {
         method: "GET",
@@ -555,7 +558,7 @@ async function followAllBots() {
         showNotification(data.message);
         return;
     }
-    await getFollowStat();
+    await getFollowStat(false);
     showNotification('Все доступные боты были поставлены в очередь на follow.');
 }
 
@@ -584,7 +587,7 @@ async function unfollowAllBots() {
         showNotification(data.message);
         return;
     }
-    await getFollowStat();
+    await getFollowStat(false);
     showNotification('Все доступные боты были поставлены в очередь на unfollow.');
 }
 
@@ -606,7 +609,7 @@ async function followAllBotsCancel() {
         showNotification(data.message);
         return;
     }
-    await getFollowStat();
+    await getFollowStat(false);
 }
 
 $(document).ready(function () {

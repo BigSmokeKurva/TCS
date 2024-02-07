@@ -8,73 +8,15 @@ namespace TCS.BotsManager
     {
         public int id { get; set; } = id;
         private string streamerUsername = streamerUsername;
-        public Dictionary<string, Bot> bots = new();
+        public Dictionary<string, Bot> bots = [];
         public SpamMode spamMode = SpamMode.Random;
-        private Task task = null;
-        private List<Task> spamTasks = new();
+        internal List<Task> spamTasks = [];
         private CancellationTokenSource spamCancellationToken = null;
-        private CancellationTokenSource cancellationToken = new();
         private static readonly Random rnd = new();
         internal static int ConnectThreads;
         internal static int DisconnectThreads;
-
-        public void UpdateTimer()
-        {
-            if (task is null)
-            {
-                cancellationToken = new();
-                task = Timer();
-                return;
-            }
-            cancellationToken.Cancel();
-            task.Wait();
-            cancellationToken.Dispose();
-            cancellationToken = new();
-            task = Timer();
-        }
-        /// <summary>
-        /// TODO Переделать через HostedService
-        /// </summary>
-        /// <returns></returns>
-        private async Task Timer()
-        {
-            try
-            {
-                await Task.Delay(600000, cancellationToken.Token);
-                var serviceProvider = ServiceProviderAccessor.ServiceProvider;
-                var scopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
-                await using var scope = scopeFactory.CreateAsyncScope();
-                var db = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
-                if (spamTasks.Any())
-                {
-                    await db.AddLog(id, "Остановил спам. (Бездействие)", Database.Models.LogType.Action);
-                    await StopSpam();
-                }
-                if (bots.Any())
-                {
-                    await db.AddLog(id, "Отключил всех ботов. (Бездействие)", Database.Models.LogType.Action);
-                    await Parallel.ForEachAsync(bots, new ParallelOptions() { MaxDegreeOfParallelism = DisconnectThreads }, async (bot, e) =>
-                    {
-                        try
-                        {
-                            await bot.Value.Disconnect();
-                        }
-                        catch { }
-                    });
-
-                    bots.Clear();
-                }
-                await db.SaveChangesAsync();
-                Manager.users.Remove(id);
-            }
-            catch (TaskCanceledException ex)
-            {
-            }
-            catch { }
-        }
         internal async Task ConnectBot(string botname, DatabaseContext db)
         {
-            UpdateTimer();
             if (bots.ContainsKey(botname))
             {
                 return;
@@ -91,8 +33,6 @@ namespace TCS.BotsManager
         }
         internal async Task DisconnectBot(string botname)
         {
-            UpdateTimer();
-
             if (!bots.TryGetValue(botname, out var bot))
                 return;
             await bot.Disconnect();
@@ -100,8 +40,6 @@ namespace TCS.BotsManager
         }
         internal async Task ConnectAllBots(DatabaseContext db)
         {
-
-            UpdateTimer();
             var configuration = await db.Configurations.FindAsync(id);
             var bots = configuration.Tokens;
             if (bots.Count == this.bots.Count)
@@ -128,7 +66,6 @@ namespace TCS.BotsManager
         }
         internal async Task DisconnectAllBots()
         {
-            UpdateTimer();
             if (!bots.Any())
                 return;
             await Parallel.ForEachAsync(bots, new ParallelOptions() { MaxDegreeOfParallelism = DisconnectThreads }, async (bot, e) =>
@@ -144,14 +81,12 @@ namespace TCS.BotsManager
         }
         internal async Task Send(string botname, string message)
         {
-            UpdateTimer();
             if (!bots.TryGetValue(botname, out var bot))
                 return;
             await bot.Send(message);
         }
         internal bool SpamStarted()
         {
-            UpdateTimer();
             return spamTasks.Any();
         }
         internal async Task StopSpam()
@@ -230,7 +165,6 @@ namespace TCS.BotsManager
         }
         internal async Task ChangeStreamerUsername(string streamerUsername)
         {
-            UpdateTimer();
             if (SpamStarted())
             {
                 await StopSpam();
