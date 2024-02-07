@@ -203,7 +203,9 @@ function getUsers() {
                     if (chatLogsButton.disabled !== true) {
                         chatLogsButton.click();
                     }
-                    await getLogs(0);
+                    else {
+                        await getLogs(0);
+                    }
                 });
                 users[user.id] = user;
 
