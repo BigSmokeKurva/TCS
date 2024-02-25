@@ -152,3 +152,15 @@ input {
     height: 27px;
     margin-right: 10px; /* Отступ между изображением и текстом */
 }
+
+.made-by {
+    position: absolute;
+    color: rgb(69, 69, 69);
+    /*right: 130px;*/
+    bottom: 7px;
+}
+
+    .made-by a {
+        text-decoration: none;
+        color: rgb(69, 69, 69);
+    }
