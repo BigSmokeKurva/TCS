@@ -659,6 +659,9 @@
         position: relative;
         margin-top: 15px;
     }
+    .logs_container{
+        min-height: 500px;
+    }
 
     @media(hover: hover) {
         .tokens_info > button {

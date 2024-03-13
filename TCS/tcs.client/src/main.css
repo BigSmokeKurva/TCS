@@ -14,6 +14,8 @@ html,
     width: 100%;
     white-space: nowrap;
     font-family: Inter-Regular;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(63, 66, 70, 1) rgba(24, 24, 27, 1);
 }
 
 #root {

@@ -50,6 +50,7 @@ function LogsTimeDropdown({ selectedTime, setSelectedTime, items, disabled }) {
                 isRendered &&
                 <div ref={dropdownContentRef} className={classNames(
                     styles.dropdown_content,
+                    _styles.dropdown_content,
                     isOpen ? styles.open : styles.closed
                 )} onClick={toggleDropdown}>
                     {
