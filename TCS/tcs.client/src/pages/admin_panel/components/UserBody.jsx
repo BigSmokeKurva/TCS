@@ -51,9 +51,9 @@ function UserBody({ userShort, editUsernameInList, editAdminInList, _deleteUser,
       },
       body: JSON.stringify(data)
     });
-      if (response.redirected) {
-          window.location.href = response.url;
-      }
+    if (response.redirected) {
+      window.location.href = response.url;
+    }
     const result = await response.json();
 
     if (result.status !== "ok") {
@@ -84,9 +84,9 @@ function UserBody({ userShort, editUsernameInList, editAdminInList, _deleteUser,
       },
       body: JSON.stringify(data)
     });
-      if (response.redirected) {
-          window.location.href = response.url;
-      }
+    if (response.redirected) {
+      window.location.href = response.url;
+    }
     const result = await response.json();
 
     if (result.status !== "ok") {
@@ -106,9 +106,9 @@ function UserBody({ userShort, editUsernameInList, editAdminInList, _deleteUser,
         "Authorization": auth_token,
       }
     });
-      if (response.redirected) {
-          window.location.href = response.url;
-      }
+    if (response.redirected) {
+      window.location.href = response.url;
+    }
     const data = await response.json();
     setUser(data);
   });
@@ -133,9 +133,9 @@ function UserBody({ userShort, editUsernameInList, editAdminInList, _deleteUser,
       },
       body: JSON.stringify(data)
     });
-      if (response.redirected) {
-          window.location.href = response.url;
-      }
+    if (response.redirected) {
+      window.location.href = response.url;
+    }
     result = await response.json();
 
     if (result.status !== "ok") {
@@ -155,9 +155,9 @@ function UserBody({ userShort, editUsernameInList, editAdminInList, _deleteUser,
         "Authorization": auth_token,
       }
     });
-      if (response.redirected) {
-          window.location.href = response.url;
-      }
+    if (response.redirected) {
+      window.location.href = response.url;
+    }
     const result = await response.json();
     downloadFile("tokens.txt", result.join('\n'));
   });
@@ -171,9 +171,9 @@ function UserBody({ userShort, editUsernameInList, editAdminInList, _deleteUser,
         "Authorization": auth_token,
       }
     });
-      if (response.redirected) {
-          window.location.href = response.url;
-      }
+    if (response.redirected) {
+      window.location.href = response.url;
+    }
     const result = await response.json();
 
     openEditor({
@@ -201,9 +201,9 @@ function UserBody({ userShort, editUsernameInList, editAdminInList, _deleteUser,
       },
       body: JSON.stringify(data)
     });
-      if (response.redirected) {
-          window.location.href = response.url;
-      }
+    if (response.redirected) {
+      window.location.href = response.url;
+    }
     const result = await response.json();
 
     if (result.status !== "ok") {
@@ -230,9 +230,9 @@ function UserBody({ userShort, editUsernameInList, editAdminInList, _deleteUser,
       },
       body: JSON.stringify(data)
     });
-      if (response.redirected) {
-          window.location.href = response.url;
-      }
+    if (response.redirected) {
+      window.location.href = response.url;
+    }
     const result = await response.json();
 
     if (result.status !== "ok") {
@@ -258,9 +258,9 @@ function UserBody({ userShort, editUsernameInList, editAdminInList, _deleteUser,
       },
       body: JSON.stringify(data)
     });
-      if (response.redirected) {
-          window.location.href = response.url;
-      }
+    if (response.redirected) {
+      window.location.href = response.url;
+    }
     const result = await response.json();
 
     if (result.status !== "ok") {
@@ -279,9 +279,9 @@ function UserBody({ userShort, editUsernameInList, editAdminInList, _deleteUser,
         "Authorization": auth_token,
       },
     });
-      if (response.redirected) {
-          window.location.href = response.url;
-      }
+    if (response.redirected) {
+      window.location.href = response.url;
+    }
     const result = await response.json();
 
     if (result.status !== "ok") {
@@ -290,6 +290,87 @@ function UserBody({ userShort, editUsernameInList, editAdminInList, _deleteUser,
     }
     _deleteUser(userShort.id);
     showNotification("Пользователь удален", "success");
+  });
+
+  const editFollowbot = useCallback(async () => {
+    const auth_token = Cookies.get("auth_token");
+    var data = {
+      id: userShort.id,
+      value: !user.followbotPermission,
+      property: 5
+    };
+    const response = await fetch("/api/admin/edituser", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": auth_token,
+      },
+      body: JSON.stringify(data)
+    });
+    if (response.redirected) {
+      window.location.href = response.url;
+    }
+    const result = await response.json();
+
+    if (result.status !== "ok") {
+      showNotification(result.message, "error");
+      return;
+    }
+    setUser({ ...user, followbotPermission: !user.followbotPermission });
+  });
+
+  const editSpam = useCallback(async () => {
+    const auth_token = Cookies.get("auth_token");
+    var data = {
+      id: userShort.id,
+      value: !user.spamPermission,
+      property: 6
+    };
+    const response = await fetch("/api/admin/edituser", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": auth_token,
+      },
+      body: JSON.stringify(data)
+    });
+    if (response.redirected) {
+      window.location.href = response.url;
+    }
+    const result = await response.json();
+
+    if (result.status !== "ok") {
+      showNotification(result.message, "error");
+      return;
+    }
+    setUser({ ...user, spamPermission: !user.spamPermission });
+  });
+
+  const editTokenEdit = useCallback(async () => {
+    const auth_token = Cookies.get("auth_token");
+    var data = {
+      id: userShort.id,
+      value: !user.tokenEditPermission,
+      property: 7
+    };
+    const response = await fetch("/api/admin/edituser", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": auth_token,
+      },
+      body: JSON.stringify(data)
+    });
+    if (response.redirected) {
+      window.location.href = response.url;
+    }
+    const result = await response.json();
+
+    if (result.status !== "ok") {
+      showNotification(result.message, "error");
+      return;
+    }
+    setUser({ ...user, tokenEditPermission: !user.tokenEditPermission });
   });
 
 
@@ -337,6 +418,18 @@ function UserBody({ userShort, editUsernameInList, editAdminInList, _deleteUser,
                 Права админа
                 <Checkbox checked={user.admin} onClick={editAdmin} />
               </div>
+              <div>
+                Followbot
+                <Checkbox checked={user.followbotPermission} onClick={editFollowbot} />
+              </div>
+              <div>
+                Спам
+                <Checkbox checked={user.spamPermission} onClick={editSpam} />
+              </div>
+              <div>
+                Доступ к токенам
+                <Checkbox checked={user.tokenEditPermission} onClick={editTokenEdit} />
+              </div>
               <button onClick={deleteUser}>Удалить аккаунт</button>
             </div>
           </>
@@ -364,7 +457,19 @@ function UserBody({ userShort, editUsernameInList, editAdminInList, _deleteUser,
               styles.tokens_info
             )}>
               <span>Управление</span>
-              <ManagmentDropdown paused={user.paused} editPaused={editPaused} admin={user.admin} editAdmin={editAdmin} deleteUser={deleteUser} />
+              <ManagmentDropdown
+                paused={user.paused}
+                editPaused={editPaused}
+                admin={user.admin}
+                editAdmin={editAdmin}
+                deleteUser={deleteUser}
+                followbot={user.followbotPermission}
+                editFollowbot={editFollowbot}
+                spam={user.spamPermission}
+                editSpam={editSpam}
+                tokenEdit={user.tokenEditPermission}
+                editTokenEdit={editTokenEdit}
+              />
             </div>
           </>
         )

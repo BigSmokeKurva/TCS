@@ -1,15 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Frozen;
-<<<<<<< HEAD:TCS/Controllers/AppApiController.cs
-using System.Text.Json;
-using TCS.BotsManager;
-using TCS.Controllers.Models;
-using TCS.Database;
-using TCS.Database.Models;
-using TCS.Filters;
-using TCS.Follow;
-=======
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -19,7 +9,6 @@ using TCS.Server.Database;
 using TCS.Server.Database.Models;
 using TCS.Server.Filters;
 using TCS.Server.Follow;
->>>>>>> master:TCS/TCS.Server/Controllers/AppApiController.cs
 
 namespace TCS.Server.Controllers
 {
@@ -392,8 +381,6 @@ namespace TCS.Server.Controllers
         [Route("getSpamTemplates")]
         public async Task<ActionResult> GetSpamTemplates()
         {
-<<<<<<< HEAD:TCS/Controllers/AppApiController.cs
-=======
             var auth_token = Guid.Parse(Request.Headers.Authorization);
             var configuration = await db.GetConfiguration(auth_token);
             return Ok(configuration.SpamTemplates.Select(x => new
@@ -410,7 +397,6 @@ namespace TCS.Server.Controllers
         [Route("addSpamTemplate")]
         public async Task<ActionResult> AddSpamTemplate(string title)
         {
->>>>>>> master:TCS/TCS.Server/Controllers/AppApiController.cs
             var auth_token = Guid.Parse(Request.Headers.Authorization);
             var id = await db.GetId(auth_token);
             if (!await db.Users.Where(x => x.Id == id).Select(x => x.SpamPermission).FirstAsync())
@@ -455,6 +441,14 @@ namespace TCS.Server.Controllers
         {
             var auth_token = Guid.Parse(Request.Headers.Authorization);
             var id = await db.GetId(auth_token);
+            if (!await db.Users.Where(x => x.Id == id).Select(x => x.SpamPermission).FirstAsync())
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "У вас нет прав на использование спама."
+                });
+            }
             if (await Manager.SpamStarted(id, db))
             {
                 return Ok(new
@@ -523,9 +517,9 @@ namespace TCS.Server.Controllers
         public async Task<ActionResult> StartSpam(string title)
         {
             var auth_token = Guid.Parse(Request.Headers.Authorization);
-<<<<<<< HEAD:TCS/Controllers/AppApiController.cs
-            var id = await db.GetId(auth_token);
-            if (!await db.Users.Where(x => x.Id == id).Select(x => x.SpamPermission).FirstAsync())
+            var configuration = await db.GetConfiguration(auth_token);
+            var template = configuration.SpamTemplates.FirstOrDefault(x => x.Title == title);
+            if (!await db.Users.Where(x => x.Id == configuration.Id).Select(x => x.SpamPermission).FirstAsync())
             {
                 return Ok(new
                 {
@@ -533,16 +527,7 @@ namespace TCS.Server.Controllers
                     message = "У вас нет прав на использование спама."
                 });
             }
-            if (await Manager.SpamStarted(id, db))
-            {
-                await Manager.StopSpam(id, db);
-            }
-            if (model.Delay > 500 || model.Delay < 0)
-=======
-            var configuration = await db.GetConfiguration(auth_token);
-            var template = configuration.SpamTemplates.FirstOrDefault(x => x.Title == title);
             if (template is null)
->>>>>>> master:TCS/TCS.Server/Controllers/AppApiController.cs
             {
                 return Ok(new
                 {
@@ -620,6 +605,14 @@ namespace TCS.Server.Controllers
         {
             var auth_token = Guid.Parse(Request.Headers.Authorization);
             var id = await db.GetId(auth_token);
+            if (!await db.Users.Where(x => x.Id == id).Select(x => x.SpamPermission).FirstAsync())
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "У вас нет прав на использование спама."
+                });
+            }
             if (await Manager.SpamStarted(id, db))
             {
                 return Ok(new
@@ -832,20 +825,22 @@ namespace TCS.Server.Controllers
 
             var auth_token = Guid.Parse(Request.Headers.Authorization);
             var user = await db.GetUser(auth_token);
-<<<<<<< HEAD:TCS/Controllers/AppApiController.cs
+
             if (!user.FollowbotPermission)
-=======
-            if (user.Configuration.StreamerUsername.Length == 0)
->>>>>>> master:TCS/TCS.Server/Controllers/AppApiController.cs
             {
                 return Ok(new
                 {
                     status = "error",
-<<<<<<< HEAD:TCS/Controllers/AppApiController.cs
                     message = "У вас нет прав на использование followbot."
-=======
+                });
+            }
+
+            if (user.Configuration.StreamerUsername.Length == 0)
+            {
+                return Ok(new
+                {
+                    status = "error",
                     message = "Не указан ник стримера."
->>>>>>> master:TCS/TCS.Server/Controllers/AppApiController.cs
                 });
             }
             var token = user.Configuration.Tokens.FirstOrDefault(x => x.Username == botname);
@@ -892,20 +887,22 @@ namespace TCS.Server.Controllers
         {
             var auth_token = Guid.Parse(Request.Headers.Authorization);
             var user = await db.GetUser(auth_token);
-<<<<<<< HEAD:TCS/Controllers/AppApiController.cs
+
             if (!user.FollowbotPermission)
-=======
-            if (user.Configuration.StreamerUsername.Length == 0)
->>>>>>> master:TCS/TCS.Server/Controllers/AppApiController.cs
             {
                 return Ok(new
                 {
                     status = "error",
-<<<<<<< HEAD:TCS/Controllers/AppApiController.cs
                     message = "У вас нет прав на использование followbot."
-=======
+                });
+            }
+
+            if (user.Configuration.StreamerUsername.Length == 0)
+            {
+                return Ok(new
+                {
+                    status = "error",
                     message = "Не указан ник стримера."
->>>>>>> master:TCS/TCS.Server/Controllers/AppApiController.cs
                 });
             }
             var token = user.Configuration.Tokens.FirstOrDefault(x => x.Username == botname);
@@ -987,20 +984,22 @@ namespace TCS.Server.Controllers
 
             var auth_token = Guid.Parse(Request.Headers.Authorization);
             var user = await db.GetUser(auth_token);
-<<<<<<< HEAD:TCS/Controllers/AppApiController.cs
+
             if (!user.FollowbotPermission)
-=======
-            if (user.Configuration.StreamerUsername.Length == 0)
->>>>>>> master:TCS/TCS.Server/Controllers/AppApiController.cs
             {
                 return Ok(new
                 {
                     status = "error",
-<<<<<<< HEAD:TCS/Controllers/AppApiController.cs
                     message = "У вас нет прав на использование followbot."
-=======
+                });
+            }
+
+            if (user.Configuration.StreamerUsername.Length == 0)
+            {
+                return Ok(new
+                {
+                    status = "error",
                     message = "Не указан ник стримера."
->>>>>>> master:TCS/TCS.Server/Controllers/AppApiController.cs
                 });
             }
             var tokens = user.Configuration.Tokens.Select(x => x.Token);
@@ -1045,20 +1044,22 @@ namespace TCS.Server.Controllers
         {
             var auth_token = Guid.Parse(Request.Headers.Authorization);
             var user = await db.GetUser(auth_token);
-<<<<<<< HEAD:TCS/Controllers/AppApiController.cs
+
             if (!user.FollowbotPermission)
-=======
-            if (user.Configuration.StreamerUsername.Length == 0)
->>>>>>> master:TCS/TCS.Server/Controllers/AppApiController.cs
             {
                 return Ok(new
                 {
                     status = "error",
-<<<<<<< HEAD:TCS/Controllers/AppApiController.cs
                     message = "У вас нет прав на использование followbot."
-=======
+                });
+            }
+
+            if (user.Configuration.StreamerUsername.Length == 0)
+            {
+                return Ok(new
+                {
+                    status = "error",
                     message = "Не указан ник стримера."
->>>>>>> master:TCS/TCS.Server/Controllers/AppApiController.cs
                 });
             }
             var tokens = user.Configuration.Tokens.Select(x => x.Token);
@@ -1121,9 +1122,8 @@ namespace TCS.Server.Controllers
         }
 
         [HttpGet]
-<<<<<<< HEAD:TCS/Controllers/AppApiController.cs
-        [Route("downloadTokens")]
-        public async Task<ActionResult> DownloadTokens()
+        [Route("getTokens")]
+        public async Task<ActionResult> DownloadTokens(bool usernames)
         {
             var auth_token = Guid.Parse(Request.Headers.Authorization);
             var user = await db.GetUser(auth_token);
@@ -1135,7 +1135,21 @@ namespace TCS.Server.Controllers
                     message = "У вас нет прав для доступа к токенам."
                 });
             }
-            var tokens = user.Configuration.Tokens.Select(x => $"{x.Token}:{x.Proxy.Type}:{x.Proxy.Host}:{x.Proxy.Port}:{x.Proxy.Credentials.Value.Username}:{x.Proxy.Credentials.Value.Password}");
+            IEnumerable<string> tokens;
+            var _tokens = await db.Configurations
+                .Where(x => x.Id == user.Id)
+                .Select(x => x.Tokens)
+                .FirstAsync();
+
+            if (usernames)
+            {
+                var maxUsernameLength = _tokens.Any() ? _tokens.Max(x => x.Username.Length) : 0;
+                tokens = _tokens.Select(x => $"{x.Username.PadRight(maxUsernameLength)}:{x.Token}:{x.Proxy.Type}:{x.Proxy.Host}:{x.Proxy.Port}:{x.Proxy.Credentials.Value.Username}:{x.Proxy.Credentials.Value.Password}");
+            }
+            else
+            {
+                tokens = _tokens.Select(x => $"{x.Token}:{x.Proxy.Type}:{x.Proxy.Host}:{x.Proxy.Port}:{x.Proxy.Credentials.Value.Username}:{x.Proxy.Credentials.Value.Password}");
+            }
             return Ok(tokens);
         }
 
@@ -1154,10 +1168,15 @@ namespace TCS.Server.Controllers
                     message = "У вас нет прав для доступа к токенам."
                 });
             }
-            var __tokens = tokens.EnumerateArray().Select(x => (x.GetString()).Split(':')).Distinct().Where(x => x.Length == 6)/*.ToDictionary(x => x[0], x => x[1..])*/;
+            var __tokens = tokens.EnumerateArray().Select(x => (x.GetString()).Split(':')).Distinct().Where(x => x.Length == 6 || x.Length == 7)/*.ToDictionary(x => x[0], x => x[1..])*/;
             Dictionary<string, string[]> _tokens = new();
             foreach (var token in __tokens)
             {
+                if (token[0].Length != 30)
+                {
+                    _tokens.TryAdd(token[1], token[2..]);
+                    continue;
+                }
                 _tokens.TryAdd(token[0], token[1..]);
             }
             var tokensChecked = await TokenCheck.Check(_tokens.Keys);
@@ -1166,7 +1185,7 @@ namespace TCS.Server.Controllers
             await FollowBot.RemoveAllFromQueue(x => x.Id == user.Id);
             user.Configuration.Tokens = tokensChecked.Keys.Select(x => new TokenItem
             {
-                Proxy = new TCS.Database.Models.Proxy
+                Proxy = new TCS.Server.Database.Models.Proxy
                 {
                     Type = _tokens[x][0],
                     Host = _tokens[x][1],
@@ -1188,8 +1207,6 @@ namespace TCS.Server.Controllers
             });
 
         }
-
-=======
         [Route("getAllTags")]
         public async Task<ActionResult> GetAllTags()
         {
@@ -1208,19 +1225,5 @@ namespace TCS.Server.Controllers
                 status = "ok"
             });
         }
-
-        [HttpGet]
-        [Route("checkIsPause")]
-        public async Task<ActionResult> CheckIsPause()
-        {
-            var auth_token = Guid.Parse(Request.Headers.Authorization);
-            var user = await db.GetUser(auth_token);
-            return Ok(new
-            {
-                status = "ok",
-                isPause = user.Paused
-            });
-        }
->>>>>>> master:TCS/TCS.Server/Controllers/AppApiController.cs
     }
 }

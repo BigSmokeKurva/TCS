@@ -6,19 +6,12 @@ namespace TCS.Server.Controllers.Models
     {
         Username = 0,
         Password = 1,
-<<<<<<< HEAD:TCS/Controllers/Models/EditUserModel.cs
-        Email = 2,
-        Admin = 3,
-        Tokens = 4,
-        Paused = 5,
-        FollowbotPermission = 6,
-        SpamPermission = 7,
-        TokenEditPermission = 8,
-=======
         Admin = 2,
         Tokens = 3,
-        Paused = 4
->>>>>>> master:TCS/TCS.Server/Controllers/Models/EditUserModel.cs
+        Paused = 4,
+        FollowbotPermission = 5,
+        SpamPermission = 6,
+        TokenEditPermission = 7,
     }
 
     public class EditUserModel

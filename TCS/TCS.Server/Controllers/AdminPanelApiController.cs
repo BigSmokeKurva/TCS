@@ -55,14 +55,10 @@ namespace TCS.Server.Controllers
                         .Select(l => TimeHelper.ToMoscow(l.Time).Date)
                         .Distinct()
                         .OrderByDescending(x => x)
-<<<<<<< HEAD:TCS/Controllers/AdminPanelApiController.cs
-                        .Select(x => x.ToString("dd.MM.yyyy")).ToListAsync(),
+                        .Select(x => x.ToString("dd.MM.yyyy")),
                 FollowbotPermission = user.FollowbotPermission,
                 SpamPermission = user.SpamPermission,
                 TokenEditPermission = user.TokenEditPermission
-=======
-                        .Select(x => x.ToString("dd.MM.yyyy"))
->>>>>>> master:TCS/TCS.Server/Controllers/AdminPanelApiController.cs
             };
             return Ok(userInfo);
         }

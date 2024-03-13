@@ -33,6 +33,7 @@ const BotList = forwardRef((props, ref) => {
             _prevButton();
         },
         getSelectedBot: () => selectedBot,
+        updateBots : () => getBots()
     }));
 
 

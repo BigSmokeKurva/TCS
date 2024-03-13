@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using TCS.Server.BotsManager;
 using TCS.Server.Database;
 using TCS.Server.Database.Models;
 

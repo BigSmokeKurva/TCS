@@ -4,7 +4,7 @@ import classNames from 'classnames';
 import { useState, useRef, useEffect } from 'react';
 import Checkbox from './Checkbox';
 
-function ManagmentDropdown({ paused, editPaused, admin, editAdmin, deleteUser }) {
+function ManagmentDropdown({ paused, editPaused, admin, editAdmin, deleteUser, followbot, editFollowbot, spam, editSpam, tokenEdit, editTokenEdit}) {
     const [isOpen, setIsOpen] = useState(false);
     const [isRendered, setIsRendered] = useState(false);
     const dropdownRef = useRef(null);
@@ -62,6 +62,18 @@ function ManagmentDropdown({ paused, editPaused, admin, editAdmin, deleteUser })
                     <button className={_styles.button_with_checkbox} onClick={editAdmin}>
                         Права админа
                         <Checkbox checked={admin} />
+                    </button>
+                    <button className={_styles.button_with_checkbox} onClick={editFollowbot}>
+                        Followbot
+                        <Checkbox checked={followbot} />
+                    </button>
+                    <button className={_styles.button_with_checkbox} onClick={editSpam}>
+                        Спам
+                        <Checkbox checked={spam} />
+                    </button>
+                    <button className={_styles.button_with_checkbox} onClick={editTokenEdit}>
+                        Доступ к токенам
+                        <Checkbox checked={tokenEdit} />
                     </button>
                     <div className={_styles.separator}></div>
                     <button className={_styles.delete_button} onClick={deleteUser}>

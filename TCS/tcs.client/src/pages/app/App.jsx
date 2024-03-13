@@ -5,6 +5,7 @@ import Stream from './components/Stream';
 import Binds from './components/Binds';
 import Spam from './components/Spam';
 import BindsDropdownContainer from './components/BindsDropdownContainer';
+import BotsDropdownContainer from './components/BotsDropdownContainer';
 import EditStreamerUsername from './components/EditStreamerUsername';
 import DropdownContainer from '../shared_components/DropdownContainer';
 import { FollowBotProvider } from './contexts/FollowBotContext';
@@ -14,6 +15,7 @@ import Chat from './components/Chat';
 import { useState, useEffect, useCallback, useRef, useContext } from 'react';
 import Cookies from 'js-cookie';
 import { NotificationsContext } from '../../contexts/notification/NotificationsContext';
+import { EditorProvider } from '../admin_panel/contexts/EditorContext';
 
 function App({ headerRef, isMobile }) {
   const [user, setUser] = useState(null);
@@ -53,9 +55,9 @@ function App({ headerRef, isMobile }) {
       },
     });
 
-      if (response.redirected) {
-          window.location.href = response.url;
-      }
+    if (response.redirected) {
+      window.location.href = response.url;
+    }
 
     var result = await response.json();
 
@@ -99,9 +101,9 @@ function App({ headerRef, isMobile }) {
       },
       body: JSON.stringify(data)
     });
-      if (response.redirected) {
-          window.location.href = response.url;
-      }
+    if (response.redirected) {
+      window.location.href = response.url;
+    }
     const result = await response.json();
     if (result[0].data.user === null) {
       viewersCount = "-";
@@ -127,9 +129,9 @@ function App({ headerRef, isMobile }) {
         'Authorization': auth_token
       }
     });
-      if (response.redirected) {
-          window.location.href = response.url;
-      }
+    if (response.redirected) {
+      window.location.href = response.url;
+    }
     var result = await response.json();
     setBinds(result);
   });
@@ -155,9 +157,9 @@ function App({ headerRef, isMobile }) {
         bindname: bind.title
       })
     });
-      if (response.redirected) {
-          window.location.href = response.url;
-      }
+    if (response.redirected) {
+      window.location.href = response.url;
+    }
 
     const result = await response.json();
 
@@ -220,9 +222,9 @@ function App({ headerRef, isMobile }) {
           'Authorization': auth_token
         }
       });
-        if (response.redirected) {
-            window.location.href = response.url;
-        }
+      if (response.redirected) {
+        window.location.href = response.url;
+      }
     }, 15000);
     return () => clearInterval(interval);
   }, []);
@@ -236,43 +238,49 @@ function App({ headerRef, isMobile }) {
     return () => clearInterval(interval);
   }, [user]);
 
+  function updateBots(){
+    botListRef.current.updateBots();
+  }
+
   return (
     user !== null && (
-      <FollowBotProvider>
-        <BindsEditorProvider>
-          <SpamEditorProvider>
-            <div className={styles.main_container}>
-              <DropdownContainer title="Боты" _isOpen={!isMobile} disabled={!isMobile} buttonStyle={{ height: "30px" }}>
-                <BotList ref={botListRef} setBotsCount={headerRef.current.setBotsCount} isMobile={isMobile} />
-              </DropdownContainer>
-              <div className={styles.vertical_grid}>
-                <DropdownContainer title="Стрим" _isOpen={true} disabled={!isMobile} buttonStyle={{ height: "30px" }}>
-                  <Stream streamerUsername={user.streamerUsername} isOnline={streamOnline} />
-                </DropdownContainer>
-                <div className={styles.horizontal_grid}>
-                  <BindsDropdownContainer callbackFunc={getBinds} title="Панель биндов" _isOpen={!isMobile} disabled={!isMobile} buttonStyle={{ height: "30px" }}>
-                    <Binds binds={binds} sendBindMessage={sendBindMessage} />
-                  </BindsDropdownContainer>
-                  <DropdownContainer title="Спам" _isOpen={!isMobile} disabled={!isMobile} buttonStyle={{ height: "30px" }}>
-                    <Spam />
+      <EditorProvider>
+        <FollowBotProvider>
+          <BindsEditorProvider>
+            <SpamEditorProvider>
+              <div className={styles.main_container}>
+                <BotsDropdownContainer callbackFunc={updateBots} title="Боты" _isOpen={!isMobile} disabled={!isMobile} buttonStyle={{ height: "30px" }}>
+                  <BotList ref={botListRef} setBotsCount={headerRef.current.setBotsCount} isMobile={isMobile} />
+                </BotsDropdownContainer>
+                <div className={styles.vertical_grid}>
+                  <DropdownContainer title="Стрим" _isOpen={true} disabled={!isMobile} buttonStyle={{ height: "30px" }}>
+                    <Stream streamerUsername={user.streamerUsername} isOnline={streamOnline} />
                   </DropdownContainer>
+                  <div className={styles.horizontal_grid}>
+                    <BindsDropdownContainer callbackFunc={getBinds} title="Панель биндов" _isOpen={!isMobile} disabled={!isMobile} buttonStyle={{ height: "30px" }}>
+                      <Binds binds={binds} sendBindMessage={sendBindMessage} />
+                    </BindsDropdownContainer>
+                    <DropdownContainer title="Спам" _isOpen={!isMobile} disabled={!isMobile} buttonStyle={{ height: "30px" }}>
+                      <Spam />
+                    </DropdownContainer>
+                  </div>
+                </div>
+                <div className={styles.vertical_grid}>
+                  <DropdownContainer title="Настройки стрима" _isOpen={!isMobile} disabled={!isMobile} buttonStyle={{ height: "30px" }}>
+                    <EditStreamerUsername ref={editStreamerUsernameRef} placeholder="Ник стримера" callbackFunc={editStreamerUsername} />
+                  </DropdownContainer>
+                  {
+                    user.username &&
+                    <DropdownContainer title="Чат" _isOpen={true} disabled={!isMobile} buttonStyle={{ height: "30px" }}>
+                      <Chat botListRef={botListRef} streamerUsername={user.streamerUsername} />
+                    </DropdownContainer>
+                  }
                 </div>
               </div>
-              <div className={styles.vertical_grid}>
-                <DropdownContainer title="Настройки стрима" _isOpen={!isMobile} disabled={!isMobile} buttonStyle={{ height: "30px" }}>
-                  <EditStreamerUsername ref={editStreamerUsernameRef} placeholder="Ник стримера" callbackFunc={editStreamerUsername} />
-                </DropdownContainer>
-                {
-                  user.username &&
-                  <DropdownContainer title="Чат" _isOpen={true} disabled={!isMobile} buttonStyle={{ height: "30px" }}>
-                    <Chat botListRef={botListRef} streamerUsername={user.streamerUsername} />
-                  </DropdownContainer>
-                }
-              </div>
-            </div>
-          </SpamEditorProvider>
-        </BindsEditorProvider>
-      </FollowBotProvider>
+            </SpamEditorProvider>
+          </BindsEditorProvider>
+        </FollowBotProvider>
+      </EditorProvider>
     )
   );
 }
