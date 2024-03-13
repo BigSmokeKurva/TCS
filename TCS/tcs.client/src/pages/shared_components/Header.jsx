@@ -41,6 +41,10 @@ const Header = forwardRef((props, ref) => {
     }, []);
 
     const getIsAdmin = useCallback(async () => {
+        if(props.page === "pause") {
+            setIsAdmin(false);
+            return;
+        }
         var auth_token = Cookies.get('auth_token');
         var response = await fetch('/api/app/getisadmin', {
             method: 'GET',

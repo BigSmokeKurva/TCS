@@ -21,6 +21,7 @@ namespace TCS.Server.Filters
             {
                 auth_token = context.HttpContext.Request.Cookies["auth_token"];
             }
+
             if (!Guid.TryParse(auth_token, out Guid auth_token_uid) || !await db.Sessions.AnyAsync(x => x.AuthToken == auth_token_uid))
             {
                 context.Result = new RedirectResult("/signin");
@@ -33,7 +34,7 @@ namespace TCS.Server.Filters
             var user = await db.Users.FirstAsync(x => db.Sessions.Any(y => y.Id == x.Id && y.AuthToken == auth_token_uid));
             if (user.Paused)
             {
-                context.Result = new RedirectResult("/paused");
+                context.Result = new RedirectResult("/pause");
                 return;
             }
             if (!user.Admin)

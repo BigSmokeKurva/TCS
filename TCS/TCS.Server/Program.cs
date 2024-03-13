@@ -5,7 +5,6 @@ using TCS.Server.BotsManager;
 using TCS.Server.Database;
 using TCS.Server.Filters;
 using TCS.Server.Follow;
-using TCS.Server.Middlewares;
 using TCS.Server.Services;
 
 namespace TCS.Server.Server;

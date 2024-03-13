@@ -1048,5 +1048,18 @@ namespace TCS.Server.Controllers
                 status = "ok"
             });
         }
+
+        [HttpGet]
+        [Route("checkIsPause")]
+        public async Task<ActionResult> CheckIsPause()
+        {
+            var auth_token = Guid.Parse(Request.Headers.Authorization);
+            var user = await db.GetUser(auth_token);
+            return Ok(new
+            {
+                status = "ok",
+                isPause = user.Paused
+            });
+        }
     }
 }

@@ -32,9 +32,11 @@ namespace TCS.Server.Filters
                 return;
             }
             var user = await db.Users.FirstAsync(x => db.Sessions.Any(y => y.Id == x.Id && y.AuthToken == auth_token_uid));
-            if (user.Paused)
+            if (user.Paused &&
+                !context.HttpContext.Request.Path.StartsWithSegments("/api/app/getusername") &&
+                !context.HttpContext.Request.Path.StartsWithSegments("/api/app/checkispause"))
             {
-                context.Result = new RedirectResult("/paused");
+                context.Result = new RedirectResult("/pause");
                 return;
             }
             user.LastOnline = TimeHelper.GetUnspecifiedUtc();

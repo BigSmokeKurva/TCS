@@ -10,24 +10,21 @@ import "./main.css";
 import { Navigate } from 'react-router-dom';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <FileDownloadProvider>
-
-      <FileReaderProvider>
-        <NotificationsProvider>
-          <Router>
-            <Routes>
-              <Route exact path="/signup" element={<Authorization />} />
-              <Route exact path="/signin" element={<Authorization />} />
-              <Route exact path="/app" element={<Layout />} />
-              <Route exact path="/admin-panel" element={<Layout />} />
-              <Route exact path="/invite-codes" element={<Layout />} />
-              <Route exact path="/pause" element={<Layout />} />
-              <Route path="/*" element={<Navigate to="/app" />} />
-            </Routes>
-          </Router>
-        </NotificationsProvider>
-      </FileReaderProvider>
-    </FileDownloadProvider>
-  </React.StrictMode>
+  <FileDownloadProvider>
+    <FileReaderProvider>
+      <NotificationsProvider>
+        <Router>
+          <Routes>
+            <Route exact path="/signup" element={<Authorization />} />
+            <Route exact path="/signin" element={<Authorization />} />
+            <Route exact path="/app" element={<Layout />} />
+            <Route exact path="/admin-panel" element={<Layout />} />
+            <Route exact path="/invite-codes" element={<Layout />} />
+            <Route exact path="/pause" element={<Layout />} />
+            <Route path="/*" element={<Navigate to="/app" />} />
+          </Routes>
+        </Router>
+      </NotificationsProvider>
+    </FileReaderProvider>
+  </FileDownloadProvider>
 )
