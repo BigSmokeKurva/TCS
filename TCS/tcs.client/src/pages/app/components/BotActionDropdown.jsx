@@ -41,9 +41,21 @@ function BotActionDropdown({ bot, connectBot, disconnectBot, followBot, unfollow
             if (isMobile) {
                 const parentNode = dropdownRef.current.parentNode;
                 dropdownContentRef.current.style.left = parentNode.parentNode.getBoundingClientRect().width - dropdownContentRef.current.getBoundingClientRect().width + "px";
-                dropdownContentRef.current.style.top = rect.top - parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.getBoundingClientRect().top + rect.height + "px";
+                var top = rect.top - parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.getBoundingClientRect().top + rect.height;
+                if (top + dropdownContentRef.current.offsetHeight > parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.offsetHeight) {
+                    top = rect.top - parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.getBoundingClientRect().top - dropdownContentRef.current.offsetHeight;
+                    dropdownContentRef.current.classList.add(styles.is_top);
+                }
+
+                dropdownContentRef.current.style.top = top + "px";
             } else {
-                dropdownContentRef.current.style.top = rect.top + rect.height + "px";
+                var top = rect.top + rect.height;
+                if (top + dropdownContentRef.current.offsetHeight > window.innerHeight) {
+                    top = rect.top - dropdownContentRef.current.offsetHeight;
+                    dropdownContentRef.current.classList.add(styles.is_top);
+                }
+
+                dropdownContentRef.current.style.top = top + "px";
             }
             scrollContainers.forEach(container => container.addEventListener('scroll', handleScroll));
         }

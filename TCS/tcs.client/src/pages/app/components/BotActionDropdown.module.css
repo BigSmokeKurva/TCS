@@ -42,6 +42,10 @@
     opacity: 0;
 }
 
+.dropdown_content.is_top{
+    margin-top: -3px;
+}
+
 .dropdown_content > button {
     background: transparent;
     border: none;
