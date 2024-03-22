@@ -66,8 +66,8 @@ const Header = forwardRef((props, ref) => {
             <div className={styles.logo_container}>
                 <img src={logoSvg} />
                 <div className={styles.logo_title}>
-                    <span>RBT</span>
-                    <span>Chat</span>
+                    <span>Gnomes</span>
+                    <span>Taxi</span>
                 </div>
             </div>
 
