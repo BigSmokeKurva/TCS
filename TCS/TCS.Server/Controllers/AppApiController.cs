@@ -656,6 +656,14 @@ namespace TCS.Server.Controllers
         {
             var auth_token = Guid.Parse(Request.Headers.Authorization);
             var configuration = await db.GetConfiguration(auth_token);
+            if (bindname.Length < 1 || string.IsNullOrEmpty(bindname) || string.IsNullOrWhiteSpace(bindname))
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "Имя бинда не может быть пустым."
+                });
+            }
             if (configuration.Binds.Any(x => x.Title == bindname))
             {
                 return Ok(new
@@ -687,6 +695,14 @@ namespace TCS.Server.Controllers
                 {
                     status = "error",
                     message = "Бинд не найден."
+                });
+            }
+            if (model.Name.Length < 1 || string.IsNullOrEmpty(model.Name) || string.IsNullOrWhiteSpace(model.Name))
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "Имя бинда не может быть пустым."
                 });
             }
             if (model.Name != model.OldName && configuration.Binds.Any(x => x.Title == model.Name))
