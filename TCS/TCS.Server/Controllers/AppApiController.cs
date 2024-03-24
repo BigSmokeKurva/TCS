@@ -625,6 +625,15 @@ namespace TCS.Server.Controllers
                     message = "Бинд с таким именем уже существует."
                 });
             }
+            bindname = bindname.Trim();
+            if(bindname.Length < 1 || string.IsNullOrEmpty(bindname) || string.IsNullOrWhiteSpace(bindname))
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "Имя бинда не может быть пустым."
+                });
+            }
             configuration.Binds.Add(new Bind() { Title = bindname });
             db.Entry(configuration).Property(x => x.Binds).IsModified = true;
             await db.AddLog(configuration.Id, $"Добавил бинд {bindname}.", Database.Models.LogType.Action);
@@ -641,6 +650,15 @@ namespace TCS.Server.Controllers
         {
             var auth_token = Guid.Parse(Request.Headers.Authorization);
             var configuration = await db.GetConfiguration(auth_token);
+            model.Name = model.Name.Trim();
+            if (model.Name.Length < 1 || string.IsNullOrEmpty(model.Name) || string.IsNullOrWhiteSpace(model.Name))
+            {
+                return Ok(new
+                {
+                    status = "error",
+                    message = "Имя бинда не может быть пустым."
+                });
+            }
             var bind = configuration.Binds.FirstOrDefault(x => x.Title == model.OldName);
             if (bind is null)
             {

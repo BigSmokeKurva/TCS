@@ -56,7 +56,7 @@ namespace TCS.Server.BotsManager
             }
             catch
             {
-                throw new Exception("Failed to connect to Twitch");
+                await Disconnect();
             }
         }
         public async Task Disconnect()
