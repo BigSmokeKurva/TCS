@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using KCS.Server.Database.Models;
+using TCS.Server.Database.Models;
 
-namespace KCS.Server.Database
+namespace TCS.Server.Database
 {
     public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbContext(options)
     {

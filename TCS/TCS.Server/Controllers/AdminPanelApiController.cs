@@ -3,14 +3,14 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Text.Json;
-using KCS.Server.BotsManager;
-using KCS.Server.Controllers.Models;
-using KCS.Server.Database;
-using KCS.Server.Database.Models;
-using KCS.Server.Filters;
-using KCS.Server.Follow;
+using TCS.Server.BotsManager;
+using TCS.Server.Controllers.Models;
+using TCS.Server.Database;
+using TCS.Server.Database.Models;
+using TCS.Server.Filters;
+using TCS.Server.Follow;
 
-namespace KCS.Server.Controllers
+namespace TCS.Server.Controllers
 {
 
     [Route("api/admin")]
@@ -192,7 +192,7 @@ namespace KCS.Server.Controllers
             var user = await db.Users.FindAsync(id);
             user.Configuration.Tokens = tokensChecked.Keys.Select(x => new TokenItem
             {
-                Proxy = new KCS.Server.Database.Models.Proxy
+                Proxy = new TCS.Server.Database.Models.Proxy
                 {
                     Type = _tokens[x][0],
                     Host = _tokens[x][1],

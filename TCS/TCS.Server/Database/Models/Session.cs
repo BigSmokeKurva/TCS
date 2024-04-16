@@ -1,4 +1,4 @@
-﻿namespace KCS.Server.Database.Models
+﻿namespace TCS.Server.Database.Models
 {
     public class Session
     {

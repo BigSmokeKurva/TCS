@@ -1,12 +1,12 @@
 ﻿using Microsoft.Playwright;
 using System.Net;
 using System.Text.RegularExpressions;
-using KCS.Server.Database;
+using TCS.Server.Database;
 using Titanium.Web.Proxy;
 using Titanium.Web.Proxy.Models;
 using Cookie = Microsoft.Playwright.Cookie;
 
-namespace KCS.Server.Follow
+namespace TCS.Server.Follow
 {
     public class BrowserThread()
     {

@@ -1,10 +1,10 @@
 ﻿using System.Net;
 using System.Net.WebSockets;
 using System.Text;
-using KCS.Server.Database.Models;
+using TCS.Server.Database.Models;
 using Timer = System.Timers.Timer;
 
-namespace KCS.Server.BotsManager
+namespace TCS.Server.BotsManager
 {
     public class Bot(string username, string token, string streamerUsername, Proxy proxy)
     {

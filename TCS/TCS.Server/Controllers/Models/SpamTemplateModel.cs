@@ -1,6 +1,6 @@
-﻿using KCS.Server.Database.Models;
+﻿using TCS.Server.Database.Models;
 
-namespace KCS.Server.Controllers.Models
+namespace TCS.Server.Controllers.Models
 {
     public class SpamTemplateModel
     {

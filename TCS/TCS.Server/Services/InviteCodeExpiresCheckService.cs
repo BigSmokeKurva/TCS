@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using KCS.Server.Database;
-using KCS.Server.Database.Models;
+using TCS.Server.Database;
+using TCS.Server.Database.Models;
 
-namespace KCS.Server.Services
+namespace TCS.Server.Services
 {
     public class InviteCodeExpiresCheckService(IServiceProvider _serviceProvider) : IHostedService, IDisposable
     {

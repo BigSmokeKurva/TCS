@@ -1,4 +1,4 @@
-﻿namespace KCS.Server
+﻿namespace TCS.Server
 {
     public static class ServiceProviderAccessor
     {
