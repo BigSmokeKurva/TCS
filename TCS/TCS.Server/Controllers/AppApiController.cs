@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Frozen;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -626,7 +625,7 @@ namespace TCS.Server.Controllers
                 });
             }
             bindname = bindname.Trim();
-            if(bindname.Length < 1 || string.IsNullOrEmpty(bindname) || string.IsNullOrWhiteSpace(bindname))
+            if (bindname.Length < 1 || string.IsNullOrEmpty(bindname) || string.IsNullOrWhiteSpace(bindname))
             {
                 return Ok(new
                 {

@@ -1,7 +1,6 @@
 ﻿using System.Net;
 using System.Net.WebSockets;
 using System.Text;
-using System.Timers;
 using TCS.Server.Database.Models;
 using Timer = System.Timers.Timer;
 
@@ -35,7 +34,7 @@ namespace TCS.Server.BotsManager
                 await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"USER {username} 8 *:{username}")), WebSocketMessageType.Text, true, new CancellationTokenSource(5000).Token);
                 await connection.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"JOIN #{streamerUsername}")), WebSocketMessageType.Text, true, new CancellationTokenSource(5000).Token);
                 // запуск таймера в фоне
-                if(pingTimer is null)
+                if (pingTimer is null)
                 {
                     pingTimer = new Timer(15000);
                     pingTimer.Elapsed += async (sender, args) =>
@@ -46,7 +45,7 @@ namespace TCS.Server.BotsManager
                         }
                         catch (Exception ex)
                         {
-                            if(pingTimer is null)
+                            if (pingTimer is null)
                                 return;
                             await Connect();
                         }
@@ -102,7 +101,7 @@ namespace TCS.Server.BotsManager
 
         private async Task PingPong(CancellationToken cancellationToken)
         {
-            if(connection.State != WebSocketState.Open)
+            if (connection.State != WebSocketState.Open)
             {
                 throw new Exception("Connection is not open");
             }
@@ -132,7 +131,7 @@ namespace TCS.Server.BotsManager
             ctoken ??= new CancellationTokenSource(5000);
             try
             {
-                if (connection.State != WebSocketState.Open)
+                if (connection is null || connection.State != WebSocketState.Open)
                 {
                     throw new Exception("Connection is not open");
                 }

@@ -107,7 +107,7 @@ namespace TCS.Server.Database
                 entity.Property(e => e.Expires).HasColumnName("expires").HasColumnType("timestamp");
                 entity.Property(e => e.ActivationDate).HasColumnName("activation_date").HasColumnType("timestamp");
                 entity.Property(e => e.Mode).HasColumnName("mode");
-            }); 
+            });
         }
         internal async Task AddLog(int id, string message, LogType type)
         {

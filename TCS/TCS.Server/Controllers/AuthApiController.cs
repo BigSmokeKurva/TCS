@@ -21,7 +21,7 @@ namespace TCS.Server.Controllers
             var loginValid = UserValidators.ValidateLogin(model.Login);
             var passwordValid = UserValidators.ValidatePassword(model.Password);
             var inviteCodeValid = await db.InviteCodes.AnyAsync(x => x.Code == model.InviteCode && x.Status == Database.Models.InviteCodeStatus.Active);
-            if(!(loginValid && passwordValid && inviteCodeValid))
+            if (!(loginValid && passwordValid && inviteCodeValid))
             {
                 var data = new ResponseModel
                 {
