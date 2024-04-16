@@ -1,4 +1,4 @@
-﻿namespace TCS.Server.Follow
+﻿namespace KCS.Server.Follow
 {
     public class PersonalSectionsJson
     {

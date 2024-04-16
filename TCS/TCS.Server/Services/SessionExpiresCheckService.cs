@@ -1,8 +1,8 @@
 ﻿
 using Microsoft.EntityFrameworkCore;
-using TCS.Server.Database;
+using KCS.Server.Database;
 
-namespace TCS.Server.Services
+namespace KCS.Server.Services
 {
     public class SessionExpiresCheckService(IServiceProvider _serviceProvider) : IHostedService, IDisposable
     {

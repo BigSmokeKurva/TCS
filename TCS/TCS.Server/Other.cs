@@ -1,10 +1,10 @@
 ﻿using System.Collections.Concurrent;
 using System.Text;
 using System.Text.RegularExpressions;
-using TCS.Server.Database.Models;
-using static TCS.Server.Database.Models.Proxy;
+using KCS.Server.Database.Models;
+using static KCS.Server.Database.Models.Proxy;
 
-namespace TCS.Server;
+namespace KCS.Server;
 
 public class UserValidators
 {

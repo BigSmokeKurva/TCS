@@ -3,14 +3,14 @@ using Microsoft.EntityFrameworkCore;
 using System.Net;
 using System.Text;
 using System.Text.Json;
-using TCS.Server.BotsManager;
-using TCS.Server.Controllers.Models;
-using TCS.Server.Database;
-using TCS.Server.Database.Models;
-using TCS.Server.Filters;
-using TCS.Server.Follow;
+using KCS.Server.BotsManager;
+using KCS.Server.Controllers.Models;
+using KCS.Server.Database;
+using KCS.Server.Database.Models;
+using KCS.Server.Filters;
+using KCS.Server.Follow;
 
-namespace TCS.Server.Controllers
+namespace KCS.Server.Controllers
 {
     [Route("api/app")]
     [ApiController]

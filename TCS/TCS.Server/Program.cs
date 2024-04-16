@@ -1,13 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using NLog.Web;
 using Npgsql;
-using TCS.Server.BotsManager;
-using TCS.Server.Database;
-using TCS.Server.Filters;
-using TCS.Server.Follow;
-using TCS.Server.Services;
+using KCS.Server.BotsManager;
+using KCS.Server.Database;
+using KCS.Server.Filters;
+using KCS.Server.Follow;
+using KCS.Server.Services;
 
-namespace TCS.Server.Server;
+namespace KCS.Server.Server;
 
 public class Program
 {

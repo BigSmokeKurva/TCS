@@ -1,4 +1,4 @@
-﻿namespace TCS.Server.Controllers.Models
+﻿namespace KCS.Server.Controllers.Models
 {
     public class EditBindModel
     {

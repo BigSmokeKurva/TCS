@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 
-namespace TCS.Server.Controllers.Models
+namespace KCS.Server.Controllers.Models
 {
     public enum ChangeType
     {

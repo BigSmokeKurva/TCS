@@ -1,6 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 
-namespace TCS.Server.Follow
+namespace KCS.Server.Follow
 {
     public class FollowBot
     {

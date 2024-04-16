@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using TCS.Server.Database;
-using TCS.Server.Database.Models;
+using KCS.Server.Database;
+using KCS.Server.Database.Models;
 
-namespace TCS.Server.BotsManager
+namespace KCS.Server.BotsManager
 {
     public class Manager
     {

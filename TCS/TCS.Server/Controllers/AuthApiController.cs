@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using TCS.Server.Controllers.Models;
-using TCS.Server.Database;
-using TCS.Server.Server.Controllers.Models;
+using KCS.Server.Controllers.Models;
+using KCS.Server.Database;
+using KCS.Server.Server.Controllers.Models;
 
-namespace TCS.Server.Controllers
+namespace KCS.Server.Controllers
 {
 
     [ApiController]

@@ -1,9 +1,9 @@
 ﻿
 using Microsoft.EntityFrameworkCore;
-using TCS.Server.BotsManager;
-using TCS.Server.Database;
+using KCS.Server.BotsManager;
+using KCS.Server.Database;
 
-namespace TCS.Server.Services
+namespace KCS.Server.Services
 {
     public class LastOnlineCheckService(IServiceProvider _serviceProvider) : IHostedService, IDisposable
     {

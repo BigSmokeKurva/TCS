@@ -1,6 +1,6 @@
 ﻿using System.Net;
 
-namespace TCS.Server.Database.Models
+namespace KCS.Server.Database.Models
 {
 
     public class Configuration

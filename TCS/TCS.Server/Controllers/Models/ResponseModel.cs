@@ -1,4 +1,4 @@
-﻿namespace TCS.Server.Server.Controllers.Models
+﻿namespace KCS.Server.Server.Controllers.Models
 {
     public class ResponseModel
     {

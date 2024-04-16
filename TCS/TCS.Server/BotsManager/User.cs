@@ -1,8 +1,8 @@
 ﻿using System.Collections.Concurrent;
-using TCS.Server.Database;
-using TCS.Server.Database.Models;
+using KCS.Server.Database;
+using KCS.Server.Database.Models;
 
-namespace TCS.Server.BotsManager
+namespace KCS.Server.BotsManager
 {
     public class User(int id, string streamerUsername)
     {

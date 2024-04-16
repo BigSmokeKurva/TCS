@@ -1,4 +1,4 @@
-﻿namespace TCS.Server
+﻿namespace KCS.Server
 {
     public static class TimeHelper
     {

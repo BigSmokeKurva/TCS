@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
-using TCS.Server.Database;
+using KCS.Server.Database;
 
-namespace TCS.Server.Filters
+namespace KCS.Server.Filters
 {
     public class UserAuthorizationFilter(DatabaseContext db) : IAsyncAuthorizationFilter
     {
