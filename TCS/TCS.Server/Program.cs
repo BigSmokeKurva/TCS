@@ -1,3 +1,4 @@
+using System.Net;
 using Microsoft.EntityFrameworkCore;
 using NLog.Web;
 using Npgsql;
@@ -52,13 +53,14 @@ public class Program
 
         // Запуск приложения
         await app.RunAsync();
-
     }
+
     private static void ConfigurePlaywright()
     {
         Microsoft.Playwright.Program.Main(new string[] { "install", "chromium" });
         Console.Clear();
     }
+
     private static void ConfigurePostgresDataSource(IConfiguration configuration)
     {
         var connectionStringBuilder = new NpgsqlConnectionStringBuilder
@@ -74,12 +76,14 @@ public class Program
             .EnableDynamicJson()
             .Build();
     }
+
     private static void ConfigureLogging(WebApplicationBuilder builder)
     {
         NLog.LogManager.Setup().LoadConfigurationFromAppSettings();
         builder.Logging.ClearProviders();
         builder.Host.UseNLog();
     }
+
     private static void ConfigureServices(WebApplicationBuilder builder)
     {
         var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
@@ -97,19 +101,18 @@ public class Program
         builder.Services.AddHostedService<LastOnlineCheckService>();
         builder.Services.AddHostedService<InviteCodeExpiresCheckService>();
         builder.Services.AddSingleton<HttpClient>();
-
+        var ip = IPAddress.Parse(builder.Configuration.GetValue<string>("IP"));
         if (!string.Equals(environment, "Development", StringComparison.OrdinalIgnoreCase))
         {
             builder.WebHost.ConfigureKestrel(options =>
             {
-                options.ListenAnyIP(80);
-                options.ListenAnyIP(443, listenOptions =>
-                {
-                    listenOptions.UseHttps("cert.pfx", "iop3360A");
-                });
+                options.Listen(ip, 80);
+                options.Listen(ip, 443,
+                    listenOptions => { listenOptions.UseHttps("cert.pfx", "iop3360A"); });
             });
         }
     }
+
     private static async Task InitializeRootUserAsync(WebApplication app)
     {
         var serviceProvider = ServiceProviderAccessor.ServiceProvider;
@@ -142,8 +145,10 @@ public class Program
 
             await db.SaveChangesAsync();
         }
+
         await db.SaveChangesAsync();
     }
+
     private static void ConfigureApp(WebApplication app)
     {
         app.UseDefaultFiles();
