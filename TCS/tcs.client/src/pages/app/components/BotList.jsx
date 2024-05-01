@@ -76,14 +76,12 @@ const BotList = forwardRef((props, ref) => {
         setSelectedBot(bots[index + 1]);
         setLastBots([...lastBots.slice(-9), bots[index + 1]]);
         setCurrentIndexBot(currentIndexBot === 9 ? 9 : currentIndexBot + 1);
-        console.log(currentIndexBot);
     });
 
     function _prevButton() {
         if (currentIndexBot === 0) {
             return;
         }
-        console.log(currentIndexBot);
         setCurrentIndexBot(currentIndexBot - 1);
         setSelectedBot(lastBots[currentIndexBot - 1]);
     }
@@ -92,7 +90,6 @@ const BotList = forwardRef((props, ref) => {
         if (selectedBot === bot) return;
         setSelectedBot(bot);
         setLastBots([...lastBots.slice(-9), bot]);
-        console.log(lastBots.length);
         setCurrentIndexBot(lastBots.length - 1);
     }
 
