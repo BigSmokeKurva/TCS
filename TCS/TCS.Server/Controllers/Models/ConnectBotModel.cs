@@ -1,7 +1,6 @@
-﻿namespace TCS.Server.Controllers.Models
+﻿namespace TCS.Server.Controllers.Models;
+
+public class ConnectBotModel
 {
-    public class ConnectBotModel
-    {
-        public string BotUsername { get; set; }
-    }
+    public string BotUsername { get; set; }
 }

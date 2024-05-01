@@ -1,7 +1,6 @@
-﻿namespace TCS.Server.Controllers.Models
+﻿namespace TCS.Server.Controllers.Models;
+
+public class FollowAllBotsModel
 {
-    public class FollowAllBotsModel
-    {
-        public int Delay { get; set; }
-    }
+    public int Delay { get; set; }
 }

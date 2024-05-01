@@ -1,9 +1,8 @@
-﻿namespace TCS.Server.Database.Models
+﻿namespace TCS.Server.Database.Models;
+
+public class BotInfo
 {
-    public class BotInfo
-    {
-        //public string Token { get; set; }
-        public string Username { get; set; }
-        public List<string> Followed { get; set; } = new();
-    }
+    //public string Token { get; set; }
+    public string Username { get; set; }
+    public List<string> Followed { get; set; } = new();
 }

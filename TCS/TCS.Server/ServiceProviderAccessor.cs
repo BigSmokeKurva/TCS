@@ -1,7 +1,6 @@
-﻿namespace TCS.Server
+﻿namespace TCS.Server;
+
+public static class ServiceProviderAccessor
 {
-    public static class ServiceProviderAccessor
-    {
-        public static IServiceProvider ServiceProvider { get; set; }
-    }
+    public static IServiceProvider ServiceProvider { get; set; }
 }

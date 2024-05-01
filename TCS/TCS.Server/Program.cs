@@ -1,12 +1,14 @@
 using System.Net;
 using Microsoft.EntityFrameworkCore;
+using NLog;
 using NLog.Web;
 using Npgsql;
-using TCS.Server.BotsManager;
 using TCS.Server.Database;
+using TCS.Server.Database.Models;
 using TCS.Server.Filters;
 using TCS.Server.Follow;
 using TCS.Server.Services;
+using User = TCS.Server.BotsManager.User;
 
 namespace TCS.Server.Server;
 
@@ -57,7 +59,7 @@ public class Program
 
     private static void ConfigurePlaywright()
     {
-        Microsoft.Playwright.Program.Main(new string[] { "install", "chromium" });
+        Microsoft.Playwright.Program.Main(new[] { "install", "chromium" });
         Console.Clear();
     }
 
@@ -68,7 +70,7 @@ public class Program
             Host = configuration.GetSection("Database:Host").Value,
             Username = configuration.GetSection("Database:Username").Value,
             Password = configuration.GetSection("Database:Password").Value,
-            Database = configuration.GetSection("Database:DatabaseName").Value,
+            Database = configuration.GetSection("Database:DatabaseName").Value
         };
 
         // Создание источника данных с поддержкой динамического JSON
@@ -79,7 +81,7 @@ public class Program
 
     private static void ConfigureLogging(WebApplicationBuilder builder)
     {
-        NLog.LogManager.Setup().LoadConfigurationFromAppSettings();
+        LogManager.Setup().LoadConfigurationFromAppSettings();
         builder.Logging.ClearProviders();
         builder.Host.UseNLog();
     }
@@ -103,14 +105,12 @@ public class Program
         builder.Services.AddSingleton<HttpClient>();
         var ip = IPAddress.Parse(builder.Configuration.GetValue<string>("IP"));
         if (!string.Equals(environment, "Development", StringComparison.OrdinalIgnoreCase))
-        {
             builder.WebHost.ConfigureKestrel(options =>
             {
                 options.Listen(ip, 80);
                 options.Listen(ip, 443,
                     listenOptions => { listenOptions.UseHttps("cert.pfx", "iop3360A"); });
             });
-        }
     }
 
     private static async Task InitializeRootUserAsync(WebApplication app)
@@ -138,7 +138,7 @@ public class Program
                 Username = username,
                 Password = password,
                 Admin = true,
-                Configuration = new Database.Models.Configuration(),
+                Configuration = new Configuration()
             };
 
             await db.Users.AddAsync(newUser);

@@ -1,9 +1,8 @@
-﻿namespace TCS.Server.Controllers.Models
+﻿namespace TCS.Server.Controllers.Models;
+
+public class CreateInviteCodeModel
 {
-    public class CreateInviteCodeModel
-    {
-        public string Code { get; set; }
-        public string Mode { get; set; }
-        public int? Hours { get; set; }
-    }
+    public string Code { get; set; }
+    public string Mode { get; set; }
+    public int? Hours { get; set; }
 }
