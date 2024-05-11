@@ -25,54 +25,64 @@ function Chat({ botListRef, streamerUsername }) {
             const randomNum = Math.floor(Math.random() * 1000000);
             return `justinfan${randomNum}`;
         };
-        const websocket = new WebSocket('wss://irc-ws.chat.twitch.tv/');
-        websocket.onopen = () => {
-            const nickname = generateRandomNickname();
-            websocket.send("CAP REQ :twitch.tv/tags twitch.tv/commands");
-            websocket.send(`NICK ${nickname}`);
-            websocket.send(`USER ${nickname} 8 * :${nickname}`);
-            websocket.send(`JOIN #${streamerUsername}`);
-        };
-
-        websocket.onmessage = (e) => {
-            if (e.data.includes("PING")) {
-                websocket.send("PONG");
-                return;
-            }
-
-            if (!e.data.includes("PRIVMSG")) {
-                return;
-            }
-            const badgesRegex = /badges=([^;]+)/;
-            const tmiSentTsRegex = /tmi-sent-ts=(\d+)/;
-            const idRegex = /id=([^;]+)/;
-            const usernameRegex = /display-name=([^;]+)/;
-            const messageRegex = /PRIVMSG #[\w-]+ :(.+)/;
-
-            const rolesMatch = e.data.match(badgesRegex);
-
-            const roles = rolesMatch ? rolesMatch[1].split(",").map(badge => badge.split('/')[0]) : [];
-            const time = new Date(parseInt(e.data.match(tmiSentTsRegex)[1]));
-            const id = e.data.match(idRegex)[1];
-            const username = e.data.match(usernameRegex)[1];
-            const msg = e.data.match(messageRegex)[1];
-            const colorIndex = usernamesWithColors[username] === undefined ? Math.floor(Math.random() * 20) + 1 : usernamesWithColors[username];
-            if (usernamesWithColors[username] === undefined) {
-                usernamesWithColors[username] = colorIndex;
-            }
-
-            const message = {
-                time: time.toLocaleTimeString(),
-                username,
-                roles,
-                text: msg,
-                id,
-                colorIndex,
+        let websocket;
+        const connectWebSocket = () => {
+            websocket = new WebSocket('wss://irc-ws.chat.twitch.tv/');
+            websocket.onopen = () => {
+                const nickname = generateRandomNickname();
+                websocket.send("CAP REQ :twitch.tv/tags twitch.tv/commands");
+                websocket.send(`NICK ${nickname}`);
+                websocket.send(`USER ${nickname} 8 * :${nickname}`);
+                websocket.send(`JOIN #${streamerUsername}`);
             };
-            setMessages((prev) => [...prev.slice(-99), message]);
-        };
+
+            websocket.onmessage = (e) => {
+                if (e.data.includes("PING")) {
+                    websocket.send("PONG");
+                    return;
+                }
+
+                if (!e.data.includes("PRIVMSG")) {
+                    return;
+                }
+                const badgesRegex = /badges=([^;]+)/;
+                const tmiSentTsRegex = /tmi-sent-ts=(\d+)/;
+                const idRegex = /id=([^;]+)/;
+                const usernameRegex = /display-name=([^;]+)/;
+                const messageRegex = /PRIVMSG #[\w-]+ :(.+)/;
+
+                const rolesMatch = e.data.match(badgesRegex);
+
+                const roles = rolesMatch ? rolesMatch[1].split(",").map(badge => badge.split('/')[0]) : [];
+                const time = new Date(parseInt(e.data.match(tmiSentTsRegex)[1]));
+                const id = e.data.match(idRegex)[1];
+                const username = e.data.match(usernameRegex)[1];
+                const msg = e.data.match(messageRegex)[1];
+                const colorIndex = usernamesWithColors[username] === undefined ? Math.floor(Math.random() * 20) + 1 : usernamesWithColors[username];
+                if (usernamesWithColors[username] === undefined) {
+                    usernamesWithColors[username] = colorIndex;
+                }
+
+                const message = {
+                    time: time.toLocaleTimeString(),
+                    username,
+                    roles,
+                    text: msg,
+                    id,
+                    colorIndex,
+                };
+                setMessages((prev) => [...prev.slice(-99), message]);
+            };
+        }
+        connectWebSocket();
+        let reconnectInterval = setInterval(() => {
+            if (websocket.readyState === WebSocket.CLOSED) {
+                connectWebSocket();
+            }
+        }, 2000);
 
         return () => {
+            clearInterval(reconnectInterval);
             websocket.close();
             setMessages([]);
             setReplyMessage(null);
